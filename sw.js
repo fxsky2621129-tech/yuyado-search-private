@@ -1,8 +1,8 @@
 const PREFIX = 'yuyado-search-pwa-';
-const CACHE = PREFIX + 'v1.2.0';
+const CACHE = PREFIX + 'v1.3.0';
 const ASSETS = ['./', './index.html', './pwa.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith(PREFIX) && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));

@@ -102,7 +102,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
       <h1>♨️ 湯宿サーチ</h1>
       <p>温泉と食事にこだわる、自分専用の宿検索</p>
     </div>
-    <div class="countpill"><span id="totalCount">0</span> 宿 登録</div>
+    <div class="countpill">保存済み <span id="totalCount">0</span> 宿 登録</div>
   </div>
 </header>
 
@@ -115,6 +115,10 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 </nav>
 
 <main>
+<div class="filters" id="searchModeBox">
+ <div class="field"><label for="searchMode">探す場所</label><select id="searchMode" onchange="changeSearchMode()"><option value="web">インターネットで実在の宿を探す</option><option value="saved">この端末に登録した宿から探す</option></select></div>
+ <p id="searchModeHelp" style="font-size:13px;line-height:1.6;margin-bottom:0">地域や条件を選んで「ネットで検索」を押してください。Googleの検索結果を別画面で開きます。</p>
+</div>
 <aside id="installHelp" class="notice">
  <strong>ホーム画面からアプリとして使えます</strong>
  <p style="margin:6px 0">Android：Chromeの「︙」→「ホーム画面に追加」→「インストール」。iPhone：Safariの共有メニュー→「ホーム画面に追加」。</p>
@@ -142,7 +146,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
       <label class="check"><input type="checkbox" class="oC" value="openAir">露天風呂あり</label>
       <label class="check"><input type="checkbox" class="oC" value="privateBath">完全貸切風呂あり</label>
     </div>
-    <div class="actions"><button class="btn primary" onclick="runOnsen()">この条件で検索</button><button class="btn secondary" onclick="resetOnsen()">条件をリセット</button></div>
+    <div class="actions"><button class="btn primary" data-search-kind="onsen" onclick="submitSearch('onsen')">ネットで検索 ↗</button><button class="btn secondary" onclick="resetOnsen()">条件をリセット</button></div>
   </div>
   <div class="sectionbar"><h3>検索結果 <span id="oResultCount"></span></h3><select id="oSort" class="sort" onchange="runOnsen()"><option value="match">一致度順</option><option value="bath">風呂評価順</option><option value="price">料金の安い順</option></select></div>
   <div id="oResults" class="cards"></div>
@@ -167,7 +171,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
       <label class="check"><input type="checkbox" class="fC" value="localFood">地元料理・郷土料理</label>
       <label class="check"><input type="checkbox" class="fC" value="seafood">海鮮料理が魅力</label>
     </div>
-    <div class="actions"><button class="btn primary" onclick="runFood()">この条件で検索</button><button class="btn secondary" onclick="resetFood()">条件をリセット</button></div>
+    <div class="actions"><button class="btn primary" data-search-kind="food" onclick="submitSearch('food')">ネットで検索 ↗</button><button class="btn secondary" onclick="resetFood()">条件をリセット</button></div>
   </div>
   <div class="sectionbar"><h3>検索結果 <span id="fResultCount"></span></h3><select id="fSort" class="sort" onchange="runFood()"><option value="match">一致度順</option><option value="dinner">夕食評価順</option><option value="breakfast">朝食評価順</option><option value="price">料金の安い順</option></select></div>
   <div id="fResults" class="cards"></div>
@@ -184,7 +188,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
       <div class="field"><label>都道府県</label><select id="aPref"></select></div>
     </div>
     <div class="checks" id="allChecks"></div>
-    <div class="actions"><button class="btn primary" onclick="runAll()">こだわり検索</button><button class="btn secondary" onclick="resetAll()">条件をリセット</button></div>
+    <div class="actions"><button class="btn primary" data-search-kind="all" onclick="submitSearch('all')">ネットで検索 ↗</button><button class="btn secondary" onclick="resetAll()">条件をリセット</button></div>
   </div>
   <div class="sectionbar"><h3>検索結果 <span id="aResultCount"></span></h3><select id="aSort" class="sort" onchange="runAll()"><option value="match">一致度順</option><option value="overall">総合評価順</option><option value="price">料金の安い順</option></select></div>
   <div id="aResults" class="cards"></div>
@@ -200,7 +204,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
     <h2>＋ 自分で宿を登録</h2>
     <p>公式サイトなどで確認した情報を、自分のデータベースとして登録できます。</p>
   </div>
-  <div class="notice">このアプリは外部APIを使いません。サイトは公開されていますが、登録した宿やメモをサーバーに送信する機能はありません。旧端末内版のデータはJSONで移行できます。登録した情報はブラウザ内（localStorage）に保存されます。ブラウザのデータ削除に備えて、下の「JSON書き出し」でバックアップしてください。</div>
+  <div class="notice">ネット検索は入力した検索条件をGoogleへ送ります。保存済みの宿やメモを自動送信する機能はありません。旧端末内版のデータはJSONで移行できます。登録した情報はブラウザ内（localStorage）に保存されます。ブラウザのデータ削除に備えて、下の「JSON書き出し」でバックアップしてください。</div>
   <div class="filters">
     <input type="hidden" id="editId">
     <div class="grid2">
@@ -243,7 +247,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 </section>
 </main>
 
-<footer>湯宿サーチ v1.2 — 登録データはこの端末に保存</footer>
+<footer>湯宿サーチ v1.3 — 登録データはこの端末に保存</footer>
 </div>
 
 <script>
@@ -360,13 +364,51 @@ function sortList(list,mode){
  };
  return list.sort(m[mode]||m.match)
 }
+function isWebSearch(){return document.getElementById('searchMode').value==='web'}
+function webSearchQuery(kind){
+ const fields={onsen:['oPref','oArea','oC'],food:['fPref','fArea','fC'],all:['aPref','aWord','aC']}[kind];
+ const words={gensen:'源泉かけ流し',roomOpenAir:'露天風呂付き客室',roomHotSpring:'客室風呂 温泉',familyBath:'貸切風呂 家族風呂',openAir:'露天風呂',privateBath:'貸切風呂',breakfastBuffet:'朝食ビュッフェ',dinnerBuffet:'夕食ビュッフェ',roomDinner:'夕食 部屋食',kaiseki:'会席料理',localFood:'郷土料理',seafood:'海鮮料理'};
+ return [val(fields[0]),val(fields[1]).trim(),'温泉 旅館 ホテル',...selected(fields[2]).map(key=>words[key])].filter(Boolean).join(' ');
+}
+function webSearchUrl(kind,site=''){
+ const query=webSearchQuery(kind)+(site?' site:'+site:'');
+ return 'https://www.google.com/search?hl=ja&q='+encodeURIComponent(query);
+}
+function renderWebSearch(kind){
+ const prefix={onsen:'o',food:'f',all:'a'}[kind];
+ document.getElementById(prefix+'ResultCount').textContent='（別画面で表示）';
+ const destinations=[['Googleで検索結果を開く',''],['じゃらん掲載の宿を探す','jalan.net'],['楽天トラベル掲載の宿を探す','travel.rakuten.co.jp']];
+ document.getElementById(prefix+'Results').innerHTML=`<article class="card" style="grid-column:1/-1"><h4>実在する宿をネットで探す</h4><p style="font-size:13px;line-height:1.6">検索条件：${esc(webSearchQuery(kind))}</p><div class="actions">${destinations.map(([label,site])=>`<a class="linkbtn" href="${esc(webSearchUrl(kind,site))}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`).join('')}</div><p class="small" style="line-height:1.7">各リンクはGoogle検索を別画面で開きます。じゃらん・楽天トラベルは掲載サイトを絞って検索します。空室・料金・評価や、希望の条件を満たすかは宿・プランのページで確認してください。</p><p class="small">結果が少ないときは、チェックする条件を減らしてください。通信が必要です。</p></article>`;
+}
+function changeSearchMode(){
+ const web=isWebSearch();
+ document.getElementById('searchModeHelp').textContent=web?'地域や条件を選んで「ネットで検索」を押してください。Googleの検索結果を別画面で開きます。':'この端末に登録した宿だけを検索します。初期の4件は架空のサンプルです。';
+ for(const id of ['oSort','fSort','aSort'])document.getElementById(id).classList.toggle('hidden',web);
+ for(const id of ['oPrice','fRating'])document.getElementById(id).closest('.field').classList.toggle('hidden',web);
+ document.querySelectorAll('[data-search-kind]').forEach(button=>button.textContent=web?'ネットで検索 ↗':'登録した宿を検索');
+ runOnsen();runFood();runAll();
+}
+function submitSearch(kind){
+ if(isWebSearch()){
+  renderWebSearch(kind);
+  window.open(webSearchUrl(kind),'_blank','noopener,noreferrer');
+ } else ({onsen:runOnsen,food:runFood,all:runAll})[kind]();
+}
+// Keep the links in sync when conditions change, including when pressing Enter.
+document.querySelectorAll('#onsen .filters input,#onsen .filters select,#food .filters input,#food .filters select,#all .filters input,#all .filters select').forEach(input=>{
+ input.addEventListener('input',()=>{if(isWebSearch())renderWebSearch(input.closest('.panel').id)});
+ input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();submitSearch(input.closest('.panel').id)}});
+});
+
 function runOnsen(){
+ if(isWebSearch()){renderWebSearch('onsen');return;}
  data=getData();
  const c=selected('oC'), pref=oPref.value,area=oArea.value.trim(),price=oPrice.value;
  render(sortList(commonFilter(pref,area,price,c),oSort.value),'oResults','oResultCount')
 }
 function resetOnsen(){oPref.value='';oArea.value='';oPrice.value='';document.querySelectorAll('.oC').forEach(x=>x.checked=false);runOnsen()}
 function runFood(){
+ if(isWebSearch()){renderWebSearch('food');return;}
  data=getData();
  const c=selected('fC'),pref=fPref.value,area=fArea.value.trim(),min=fRating.value;
  let list=commonFilter(pref,area,'',c).filter(x=>!min||(Math.max(n(x.inn.dinner),n(x.inn.breakfast))>=n(min)));
@@ -374,6 +416,7 @@ function runFood(){
 }
 function resetFood(){fPref.value='';fArea.value='';fRating.value='';document.querySelectorAll('.fC').forEach(x=>x.checked=false);runFood()}
 function runAll(){
+ if(isWebSearch()){renderWebSearch('all');return;}
  data=getData();
  const c=selected('aC'),pref=aPref.value,w=aWord.value.trim().toLowerCase();
  let list=commonFilter(pref,'','',c).filter(x=>!w||[x.inn.name,x.inn.area,x.inn.address,x.inn.memo].join(' ').toLowerCase().includes(w));
@@ -443,7 +486,7 @@ function importData(ev){
  };r.readAsText(f);ev.target.value=''
 }
 
-runOnsen();runFood();runAll();renderFavorites();renderManage();
+changeSearchMode();renderFavorites();renderManage();
 </script>
 <script src="./pwa.js"></script>
 </body>
