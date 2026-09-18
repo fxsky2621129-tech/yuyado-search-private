@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>湯宿サーチ Android端末内版</title>
+<meta name="theme-color" content="#173f3a">
+<style>
+:root{
+  --bg:#f4f6f3; --card:#ffffff; --ink:#1c2522; --muted:#6b7772;
+  --accent:#173f3a; --accent2:#c9873c; --line:#dfe5e1; --soft:#eef4f1;
+  --danger:#9f3e3e; --shadow:0 8px 24px rgba(20,45,38,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{max-width:1120px;margin:auto;min-height:100vh}
+header{
+  background:linear-gradient(135deg,#173f3a,#285f57);color:#fff;
+  padding:22px 18px 18px;position:sticky;top:0;z-index:20;box-shadow:0 3px 14px rgba(0,0,0,.12)
+}
+.headrow{display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand h1{font-size:22px;margin:0 0 4px}
+.brand p{font-size:12px;margin:0;opacity:.82}
+.countpill{background:rgba(255,255,255,.16);padding:8px 12px;border-radius:999px;font-size:12px;white-space:nowrap}
+nav{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:#fff;padding:8px;
+  position:sticky;top:77px;z-index:15;border-bottom:1px solid var(--line)
+}
+.tab{border:0;background:#f5f7f6;border-radius:11px;padding:10px 6px;color:#45524e;font-weight:700;font-size:12px}
+.tab.active{background:var(--accent);color:white}
+main{padding:14px}
+.panel{display:none}.panel.active{display:block}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px}
+.hero h2{font-size:18px;margin:0 0 6px}.hero p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+.filters{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px;color:#45524e}
+.field input,.field select,.field textarea{
+  width:100%;border:1px solid #cfd8d3;border-radius:10px;background:#fff;padding:10px 11px;min-height:42px
+}
+.field textarea{min-height:88px;resize:vertical}
+.checks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.check{
+  border:1px solid var(--line);border-radius:11px;padding:9px;background:#fbfcfb;
+  display:flex;gap:8px;align-items:flex-start;font-size:13px
+}
+.check input{margin-top:2px;accent-color:var(--accent)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border:0;border-radius:11px;padding:10px 14px;font-weight:800}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.secondary{background:#edf2ef;color:var(--accent)}
+.btn.gold{background:#fff2e3;color:#7a4c1b}
+.btn.danger{background:#faecec;color:var(--danger)}
+.sectionbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:16px 2px 10px}
+.sectionbar h3{margin:0;font-size:16px}
+.sort{border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:#fff}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.cardtop{display:flex;gap:10px;justify-content:space-between}
+.card h4{margin:0;font-size:17px;line-height:1.4}.meta{color:var(--muted);font-size:12px;margin-top:4px}
+.score{min-width:58px;height:58px;border-radius:50%;background:#edf5f2;display:grid;place-items:center;text-align:center;color:var(--accent);font-weight:900;font-size:18px}
+.score small{display:block;font-size:9px;font-weight:700}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:11px 0}
+.tag{background:var(--soft);color:#31544d;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.tag.food{background:#fff2e3;color:#7a4c1b}.tag.special{background:#f3edf8;color:#674775}
+.ratings{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:#f7f9f8;border-radius:11px;padding:9px;margin:10px 0}
+.rating{text-align:center;font-size:10px;color:var(--muted)}.rating b{display:block;color:var(--ink);font-size:14px;margin-top:2px}
+.memo{font-size:12px;line-height:1.55;color:#53605c;background:#fafbfa;border-left:3px solid #d8e5df;padding:8px 10px;border-radius:6px;margin:10px 0}
+.cardactions{display:flex;flex-wrap:wrap;gap:7px}
+.linkbtn{border:0;border-radius:9px;padding:8px 10px;background:#eef2f0;color:#284c45;font-size:12px;font-weight:800;text-decoration:none}
+.fav{background:#fff0f0;color:#9f3e3e}.fav.on{background:#9f3e3e;color:white}
+.empty{background:#fff;border:1px dashed #cdd7d2;border-radius:15px;padding:30px;text-align:center;color:var(--muted)}
+.notice{background:#fff7e8;border:1px solid #f0d4a7;border-radius:12px;padding:10px 12px;color:#72501f;font-size:12px;line-height:1.55;margin-bottom:12px}
+.savedmsg{font-size:12px;color:#2f685e;font-weight:700;min-height:18px;margin-top:8px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.small{font-size:11px;color:var(--muted)}
+.filebox{display:flex;gap:8px;flex-wrap:wrap}
+.hidden{display:none!important}
+footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11px}
+@media(max-width:760px){
+  header{padding:16px 13px 13px}.brand h1{font-size:19px}.countpill{font-size:10px;padding:6px 8px}
+  nav{top:66px;overflow-x:auto;display:flex}.tab{min-width:86px;flex:1}
+  main{padding:10px}.grid2,.grid3{grid-template-columns:1fr}.checks{grid-template-columns:1fr}
+  .cards{grid-template-columns:1fr}.ratings{grid-template-columns:repeat(4,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="headrow">
+    <div class="brand">
+      <h1>♨️ 湯宿サーチ</h1>
+      <p>温泉と食事にこだわる、自分専用の宿検索</p>
+    </div>
+    <div class="countpill"><span id="totalCount">0</span> 宿 登録</div>
+  </div>
+</header>
+
+<nav>
+  <button class="tab active" data-tab="onsen">♨️ 温泉</button>
+  <button class="tab" data-tab="food">🍽️ 食事</button>
+  <button class="tab" data-tab="all">⭐ こだわり</button>
+  <button class="tab" data-tab="favorites">♡ お気に入り</button>
+  <button class="tab" data-tab="manage">＋ 宿を登録</button>
+</nav>
+
+<main>
+<section id="onsen" class="panel active">
+  <div class="hero">
+    <h2>♨️ 温泉条件から探す</h2>
+    <p>源泉かけ流し、客室風呂、貸切・家族風呂などを組み合わせて検索できます。</p>
+  </div>
+  <div class="filters">
+    <div class="grid3">
+      <div class="field"><label>都道府県</label><select id="oPref"></select></div>
+      <div class="field"><label>温泉地・地域</label><input id="oArea" placeholder="例：下呂、草津、奥飛騨"></div>
+      <div class="field"><label>1人あたり料金上限</label>
+        <select id="oPrice"><option value="">指定なし</option><option value="15000">15,000円</option><option value="20000">20,000円</option><option value="30000">30,000円</option><option value="40000">40,000円</option><option value="50000">50,000円</option><option value="80000">80,000円</option></select>
+      </div>
+    </div>
+    <div class="checks">
+      <label class="check"><input type="checkbox" class="oC" value="gensen">源泉かけ流し</label>
+      <label class="check"><input type="checkbox" class="oC" value="roomOpenAir">客室露天風呂付き</label>
+      <label class="check"><input type="checkbox" class="oC" value="roomHotSpring">客室のお風呂も温泉</label>
+      <label class="check"><input type="checkbox" class="oC" value="familyBath">家族風呂・貸切風呂あり</label>
+      <label class="check"><input type="checkbox" class="oC" value="openAir">露天風呂あり</label>
+      <label class="check"><input type="checkbox" class="oC" value="privateBath">完全貸切風呂あり</label>
+    </div>
+    <div class="actions"><button class="btn primary" onclick="runOnsen()">この条件で検索</button><button class="btn secondary" onclick="resetOnsen()">条件をリセット</button></div>
+  </div>
+  <div class="sectionbar"><h3>検索結果 <span id="oResultCount"></span></h3><select id="oSort" class="sort" onchange="runOnsen()"><option value="match">一致度順</option><option value="bath">風呂評価順</option><option value="price">料金の安い順</option></select></div>
+  <div id="oResults" class="cards"></div>
+</section>
+
+<section id="food" class="panel">
+  <div class="hero">
+    <h2>🍽️ 食事条件から探す</h2>
+    <p>朝食・夕食ビュッフェ、部屋食、会席料理など、食事を重視して宿を探せます。</p>
+  </div>
+  <div class="filters">
+    <div class="grid3">
+      <div class="field"><label>都道府県</label><select id="fPref"></select></div>
+      <div class="field"><label>地域・温泉地</label><input id="fArea" placeholder="例：飛騨、高山、伊勢"></div>
+      <div class="field"><label>食事評価 下限</label><select id="fRating"><option value="">指定なし</option><option value="3.5">3.5以上</option><option value="4">4.0以上</option><option value="4.3">4.3以上</option><option value="4.5">4.5以上</option></select></div>
+    </div>
+    <div class="checks">
+      <label class="check"><input type="checkbox" class="fC" value="breakfastBuffet">朝食ビュッフェが魅力</label>
+      <label class="check"><input type="checkbox" class="fC" value="dinnerBuffet">夕食ビュッフェが魅力</label>
+      <label class="check"><input type="checkbox" class="fC" value="roomDinner">夕食が部屋食</label>
+      <label class="check"><input type="checkbox" class="fC" value="kaiseki">会席料理</label>
+      <label class="check"><input type="checkbox" class="fC" value="localFood">地元料理・郷土料理</label>
+      <label class="check"><input type="checkbox" class="fC" value="seafood">海鮮料理が魅力</label>
+    </div>
+    <div class="actions"><button class="btn primary" onclick="runFood()">この条件で検索</button><button class="btn secondary" onclick="resetFood()">条件をリセット</button></div>
+  </div>
+  <div class="sectionbar"><h3>検索結果 <span id="fResultCount"></span></h3><select id="fSort" class="sort" onchange="runFood()"><option value="match">一致度順</option><option value="dinner">夕食評価順</option><option value="breakfast">朝食評価順</option><option value="price">料金の安い順</option></select></div>
+  <div id="fResults" class="cards"></div>
+</section>
+
+<section id="all" class="panel">
+  <div class="hero">
+    <h2>⭐ 温泉＋食事 こだわり検索</h2>
+    <p>「露天風呂付き客室 ＋ 部屋食」など、温泉と食事の条件を同時に指定できます。</p>
+  </div>
+  <div class="filters">
+    <div class="grid2">
+      <div class="field"><label>フリーワード</label><input id="aWord" placeholder="宿名・地域・メモを検索"></div>
+      <div class="field"><label>都道府県</label><select id="aPref"></select></div>
+    </div>
+    <div class="checks" id="allChecks"></div>
+    <div class="actions"><button class="btn primary" onclick="runAll()">こだわり検索</button><button class="btn secondary" onclick="resetAll()">条件をリセット</button></div>
+  </div>
+  <div class="sectionbar"><h3>検索結果 <span id="aResultCount"></span></h3><select id="aSort" class="sort" onchange="runAll()"><option value="match">一致度順</option><option value="overall">総合評価順</option><option value="price">料金の安い順</option></select></div>
+  <div id="aResults" class="cards"></div>
+</section>
+
+<section id="favorites" class="panel">
+  <div class="hero"><h2>♡ お気に入り</h2><p>気になる宿だけを保存して比較できます。保存内容はこの端末のブラウザに残ります。</p></div>
+  <div id="favResults" class="cards"></div>
+</section>
+
+<section id="manage" class="panel">
+  <div class="hero">
+    <h2>＋ 自分で宿を登録</h2>
+    <p>公式サイトなどで確認した情報を、自分のデータベースとして登録できます。</p>
+  </div>
+  <div class="notice">この第1版は外部APIを使いません。登録した情報はブラウザ内（localStorage）に保存されます。ブラウザのデータ削除に備えて、下の「JSON書き出し」でバックアップしてください。</div>
+  <div class="filters">
+    <input type="hidden" id="editId">
+    <div class="grid2">
+      <div class="field"><label>宿名 *</label><input id="mName" placeholder="例：○○温泉 ○○旅館"></div>
+      <div class="field"><label>都道府県 *</label><select id="mPref"></select></div>
+      <div class="field"><label>温泉地・地域</label><input id="mArea" placeholder="例：下呂温泉"></div>
+      <div class="field"><label>住所</label><input id="mAddress" placeholder="市町村まででも可"></div>
+      <div class="field"><label>1人あたり目安料金（円）</label><input id="mPrice" type="number" min="0" step="1000" placeholder="25000"></div>
+      <div class="field"><label>公式サイトURL</label><input id="mUrl" type="url" placeholder="https://..."></div>
+    </div>
+    <hr>
+    <div class="grid3">
+      <div class="field"><label>総合評価（0〜5）</label><input id="mOverall" type="number" min="0" max="5" step="0.1" placeholder="4.5"></div>
+      <div class="field"><label>風呂評価（0〜5）</label><input id="mBath" type="number" min="0" max="5" step="0.1" placeholder="4.7"></div>
+      <div class="field"><label>夕食評価（0〜5）</label><input id="mDinner" type="number" min="0" max="5" step="0.1" placeholder="4.6"></div>
+      <div class="field"><label>朝食評価（0〜5）</label><input id="mBreakfast" type="number" min="0" max="5" step="0.1" placeholder="4.4"></div>
+    </div>
+    <hr>
+    <div class="checks" id="manageChecks"></div>
+    <div class="field" style="margin-top:12px"><label>自分用メモ</label><textarea id="mMemo" placeholder="例：夕食の評判が良い。客室露天風呂は温泉。次回候補。"></textarea></div>
+    <div class="actions">
+      <button class="btn primary" onclick="saveInn()">この宿を保存</button>
+      <button class="btn secondary" onclick="clearForm()">入力をクリア</button>
+    </div>
+    <div id="saveMsg" class="savedmsg"></div>
+  </div>
+
+  <div class="filters">
+    <h3 style="margin-top:0">データのバックアップ</h3>
+    <p class="small">機種変更やブラウザ初期化に備えて、定期的な書き出しがおすすめです。</p>
+    <div class="filebox">
+      <button class="btn gold" onclick="exportData()">JSONを書き出し</button>
+      <label class="btn secondary">JSONを読み込み<input id="importFile" class="hidden" type="file" accept=".json,application/json" onchange="importData(event)"></label>
+      <button class="btn danger" onclick="deleteDemo()">サンプル宿だけ削除</button>
+    </div>
+  </div>
+
+  <div class="sectionbar"><h3>登録済みの宿</h3></div>
+  <div id="manageResults" class="cards"></div>
+</section>
+</main>
+
+<footer>湯宿サーチ Android端末内版 v1.1 — 外部APIなし / 自分専用データベース</footer>
+</div>
+
+<script>
+const KEY='yuyado_search_v1';
+const FAVKEY='yuyado_favorites_v1';
+const prefs=['','北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+
+const featureDefs=[
+ ['gensen','♨️ 源泉かけ流し','onsen'],
+ ['roomOpenAir','🛁 客室露天風呂付き','onsen'],
+ ['roomHotSpring','♨️ 客室風呂も温泉','onsen'],
+ ['familyBath','👨‍👩‍👧 家族・貸切風呂','onsen'],
+ ['openAir','🌿 露天風呂','onsen'],
+ ['privateBath','🔐 完全貸切風呂','onsen'],
+ ['breakfastBuffet','🥐 朝食ビュッフェ','food'],
+ ['dinnerBuffet','🍽️ 夕食ビュッフェ','food'],
+ ['roomDinner','🍱 夕食部屋食','food'],
+ ['kaiseki','🥢 会席料理','food'],
+ ['localFood','🏔️ 地元・郷土料理','food'],
+ ['seafood','🐟 海鮮料理','food']
+];
+
+const demo=[
+ {id:'demo1',demo:true,name:'サンプル宿 A',pref:'岐阜県',area:'サンプル温泉地',address:'岐阜県',price:28000,url:'',overall:4.5,bath:4.7,dinner:4.6,breakfast:4.2,features:['gensen','roomOpenAir','roomHotSpring','kaiseki','localFood'],memo:'これは操作確認用のサンプルデータです。実在の宿情報ではありません。'},
+ {id:'demo2',demo:true,name:'サンプル宿 B',pref:'群馬県',area:'サンプル温泉地',address:'群馬県',price:22000,url:'',overall:4.3,bath:4.6,dinner:4.2,breakfast:4.4,features:['gensen','familyBath','openAir','breakfastBuffet','dinnerBuffet'],memo:'これは操作確認用のサンプルデータです。実在の宿情報ではありません。'},
+ {id:'demo3',demo:true,name:'サンプル宿 C',pref:'長野県',area:'サンプル温泉地',address:'長野県',price:34000,url:'',overall:4.6,bath:4.4,dinner:4.8,breakfast:4.5,features:['roomOpenAir','privateBath','roomDinner','kaiseki','localFood'],memo:'これは操作確認用のサンプルデータです。実在の宿情報ではありません。'},
+ {id:'demo4',demo:true,name:'サンプル宿 D',pref:'三重県',area:'サンプル温泉地',address:'三重県',price:26000,url:'',overall:4.4,bath:4.1,dinner:4.7,breakfast:4.6,features:['openAir','breakfastBuffet','dinnerBuffet','seafood'],memo:'これは操作確認用のサンプルデータです。実在の宿情報ではありません。'}
+];
+
+function getData(){
+  try{const x=JSON.parse(localStorage.getItem(KEY)); return Array.isArray(x)?x:demo}
+  catch(e){return demo}
+}
+function setData(d){localStorage.setItem(KEY,JSON.stringify(d));updateCount()}
+function getFav(){try{return JSON.parse(localStorage.getItem(FAVKEY))||[]}catch(e){return[]}}
+function setFav(a){localStorage.setItem(FAVKEY,JSON.stringify(a))}
+let data=getData(); if(!localStorage.getItem(KEY)) setData(data);
+
+function initSelect(id){
+ const s=document.getElementById(id); s.innerHTML=prefs.map((p,i)=>`<option value="${p}">${i? p:'全国'}</option>`).join('');
+}
+['oPref','fPref','aPref','mPref'].forEach(initSelect);
+
+function makeFeatureChecks(target, cls='mC'){
+ document.getElementById(target).innerHTML=featureDefs.map(([k,l,t])=>`<label class="check"><input type="checkbox" class="${cls}" value="${k}">${l}</label>`).join('');
+}
+makeFeatureChecks('manageChecks','mC');
+makeFeatureChecks('allChecks','aC');
+
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
+ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+ document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+ b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active');
+ if(b.dataset.tab==='favorites') renderFavorites();
+ if(b.dataset.tab==='manage') renderManage();
+}));
+
+function updateCount(){data=getData();document.getElementById('totalCount').textContent=data.length}
+updateCount();
+
+const labelFor=k=>featureDefs.find(x=>x[0]===k)?.[1]||k;
+const typeFor=k=>featureDefs.find(x=>x[0]===k)?.[2]||'';
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function n(v){const x=Number(v);return isNaN(x)?0:x}
+function fmtPrice(v){return v?Number(v).toLocaleString()+'円〜':'未登録'}
+function mapUrl(address){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address||'')}
+
+function card(inn,match=0,manage=false){
+ const fav=getFav(); const on=fav.includes(inn.id);
+ const tags=(inn.features||[]).map(k=>`<span class="tag ${typeFor(k)==='food'?'food':''}">${labelFor(k)}</span>`).join('');
+ const site=inn.url?`<a class="linkbtn" href="${esc(inn.url)}" target="_blank" rel="noopener">公式サイト</a>`:'';
+ const map=inn.address?`<a class="linkbtn" href="${mapUrl(inn.address)}" target="_blank" rel="noopener">地図</a>`:'';
+ return `<article class="card">
+   <div class="cardtop"><div><h4>${esc(inn.name)}</h4><div class="meta">${esc(inn.pref)} ${esc(inn.area||'')} ・ ${fmtPrice(inn.price)}</div></div>${match?`<div class="score">${match}%<small>一致度</small></div>`:''}</div>
+   <div class="tags">${tags||'<span class="small">条件タグ未登録</span>'}</div>
+   <div class="ratings">
+    <div class="rating">総合<b>${n(inn.overall).toFixed(1)}</b></div>
+    <div class="rating">風呂<b>${n(inn.bath).toFixed(1)}</b></div>
+    <div class="rating">夕食<b>${n(inn.dinner).toFixed(1)}</b></div>
+    <div class="rating">朝食<b>${n(inn.breakfast).toFixed(1)}</b></div>
+   </div>
+   ${inn.memo?`<div class="memo">${esc(inn.memo)}</div>`:''}
+   <div class="cardactions">
+    <button class="linkbtn fav ${on?'on':''}" onclick="toggleFav('${inn.id}')">${on?'♥ お気に入り済':'♡ お気に入り'}</button>
+    ${site}${map}
+    ${manage?`<button class="linkbtn" onclick="editInn('${inn.id}')">編集</button><button class="linkbtn fav" onclick="deleteInn('${inn.id}')">削除</button>`:''}
+   </div>
+ </article>`
+}
+function render(list,target,countId,manage=false){
+ document.getElementById(target).innerHTML=list.length?list.map(x=>card(x.inn||x,x.match||0,manage)).join(''):`<div class="empty">条件に合う宿がありません。<br>「宿を登録」から追加してください。</div>`;
+ if(countId) document.getElementById(countId).textContent=`(${list.length}件)`;
+}
+function selected(cls){return [...document.querySelectorAll('.'+cls+':checked')].map(x=>x.value)}
+function calcMatch(inn,conditions){
+ if(!conditions.length)return 100;
+ const hit=conditions.filter(c=>(inn.features||[]).includes(c)).length;
+ return Math.round(hit/conditions.length*100)
+}
+function commonFilter(pref,area,price,conditions){
+ return data.map(inn=>({inn,match:calcMatch(inn,conditions)})).filter(x=>{
+   const i=x.inn;
+   return (!pref||i.pref===pref)&&(!area||((i.area||'')+(i.name||'')+(i.memo||'')).includes(area))&&(!price||n(i.price)<=n(price))&&conditions.every(c=>(i.features||[]).includes(c))
+ })
+}
+function sortList(list,mode){
+ const m={
+  match:(a,b)=>b.match-a.match,
+  bath:(a,b)=>n(b.inn.bath)-n(a.inn.bath),
+  dinner:(a,b)=>n(b.inn.dinner)-n(a.inn.dinner),
+  breakfast:(a,b)=>n(b.inn.breakfast)-n(a.inn.breakfast),
+  overall:(a,b)=>n(b.inn.overall)-n(a.inn.overall),
+  price:(a,b)=>(n(a.inn.price)||9999999)-(n(b.inn.price)||9999999)
+ };
+ return list.sort(m[mode]||m.match)
+}
+function runOnsen(){
+ data=getData();
+ const c=selected('oC'), pref=oPref.value,area=oArea.value.trim(),price=oPrice.value;
+ render(sortList(commonFilter(pref,area,price,c),oSort.value),'oResults','oResultCount')
+}
+function resetOnsen(){oPref.value='';oArea.value='';oPrice.value='';document.querySelectorAll('.oC').forEach(x=>x.checked=false);runOnsen()}
+function runFood(){
+ data=getData();
+ const c=selected('fC'),pref=fPref.value,area=fArea.value.trim(),min=fRating.value;
+ let list=commonFilter(pref,area,'',c).filter(x=>!min||(Math.max(n(x.inn.dinner),n(x.inn.breakfast))>=n(min)));
+ render(sortList(list,fSort.value),'fResults','fResultCount')
+}
+function resetFood(){fPref.value='';fArea.value='';fRating.value='';document.querySelectorAll('.fC').forEach(x=>x.checked=false);runFood()}
+function runAll(){
+ data=getData();
+ const c=selected('aC'),pref=aPref.value,w=aWord.value.trim().toLowerCase();
+ let list=commonFilter(pref,'','',c).filter(x=>!w||[x.inn.name,x.inn.area,x.inn.address,x.inn.memo].join(' ').toLowerCase().includes(w));
+ render(sortList(list,aSort.value),'aResults','aResultCount')
+}
+function resetAll(){aPref.value='';aWord.value='';document.querySelectorAll('.aC').forEach(x=>x.checked=false);runAll()}
+
+function toggleFav(id){
+ let f=getFav(); f=f.includes(id)?f.filter(x=>x!==id):[...f,id];setFav(f);
+ runOnsen();runFood();runAll();renderFavorites();renderManage()
+}
+function renderFavorites(){
+ data=getData();const f=getFav();render(data.filter(x=>f.includes(x.id)),'favResults')
+}
+function renderManage(){data=getData();render(data,'manageResults',null,true)}
+
+function val(id){return document.getElementById(id).value}
+function saveInn(){
+ const name=val('mName').trim(),pref=val('mPref');
+ if(!name||!pref){saveMsg.textContent='宿名と都道府県は必須です。';return}
+ data=getData();
+ const edit=val('editId');
+ const obj={
+  id:edit||('inn_'+Date.now()),demo:false,name,pref,area:val('mArea').trim(),address:val('mAddress').trim(),
+  price:n(val('mPrice')),url:val('mUrl').trim(),overall:n(val('mOverall')),bath:n(val('mBath')),
+  dinner:n(val('mDinner')),breakfast:n(val('mBreakfast')),features:selected('mC'),memo:val('mMemo').trim()
+ };
+ if(edit){data=data.map(x=>x.id===edit?obj:x)}else{data.unshift(obj)}
+ setData(data); saveMsg.textContent=edit?'更新しました。':'保存しました。';
+ clearForm(false);renderManage();runOnsen();runFood();runAll()
+}
+function clearForm(clearMsg=true){
+ ['editId','mName','mArea','mAddress','mPrice','mUrl','mOverall','mBath','mDinner','mBreakfast','mMemo'].forEach(id=>document.getElementById(id).value='');
+ mPref.value='';document.querySelectorAll('.mC').forEach(x=>x.checked=false);if(clearMsg)saveMsg.textContent=''
+}
+function editInn(id){
+ const x=getData().find(x=>x.id===id);if(!x)return;
+ editId.value=x.id;mName.value=x.name;mPref.value=x.pref;mArea.value=x.area||'';mAddress.value=x.address||'';mPrice.value=x.price||'';
+ mUrl.value=x.url||'';mOverall.value=x.overall||'';mBath.value=x.bath||'';mDinner.value=x.dinner||'';mBreakfast.value=x.breakfast||'';mMemo.value=x.memo||'';
+ document.querySelectorAll('.mC').forEach(c=>c.checked=(x.features||[]).includes(c.value));
+ window.scrollTo({top:0,behavior:'smooth'});saveMsg.textContent='編集中：'+x.name
+}
+function deleteInn(id){
+ const x=getData().find(x=>x.id===id);if(!x)return;
+ if(!confirm(`「${x.name}」を削除しますか？`))return;
+ data=getData().filter(x=>x.id!==id);setData(data);setFav(getFav().filter(x=>x!==id));renderManage();runOnsen();runFood();runAll()
+}
+function deleteDemo(){
+ if(!confirm('操作確認用のサンプル宿を削除しますか？'))return;
+ data=getData().filter(x=>!x.demo);setData(data);renderManage();runOnsen();runFood();runAll()
+}
+function exportData(){
+ const payload={app:'湯宿サーチ',version:1,exportedAt:new Date().toISOString(),inns:getData(),favorites:getFav()};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='yuyado-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)
+}
+function importData(ev){
+ const f=ev.target.files[0];if(!f)return;
+ const r=new FileReader();r.onload=()=>{
+  try{
+   const p=JSON.parse(r.result);const inns=Array.isArray(p)?p:p.inns;
+   if(!Array.isArray(inns))throw new Error();
+   if(!confirm(`${inns.length}件のデータを読み込み、現在のデータと入れ替えますか？`))return;
+   setData(inns); if(Array.isArray(p.favorites))setFav(p.favorites);data=getData();
+   renderManage();runOnsen();runFood();runAll();renderFavorites();saveMsg.textContent='バックアップを読み込みました。'
+  }catch(e){alert('JSONファイルを読み込めませんでした。')}
+ };r.readAsText(f);ev.target.value=''
+}
+
+runOnsen();runFood();runAll();renderFavorites();renderManage();
+</script>
+</body>
+</html>
