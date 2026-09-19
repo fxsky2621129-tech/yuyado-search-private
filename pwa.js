@@ -22,7 +22,7 @@ window.addEventListener('appinstalled', () => {
   document.getElementById('installHelp').classList.add('hidden');
 });
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('./sw.js').then(() => navigator.serviceWorker.ready).then(() => {
+  navigator.serviceWorker.register('./sw.js?v=1.6.0').then(() => navigator.serviceWorker.ready).then(() => {
     offlineStatus.textContent = 'オフラインで開く準備ができました。';
   }).catch(() => {
     offlineStatus.textContent = 'オフラインの準備ができませんでした。通信できる状態で開き直してください。';
