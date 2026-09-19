@@ -344,13 +344,11 @@ function card(inn,match=0,manage=false){
  const site=inn.url?`<a class="linkbtn" href="${esc(inn.url)}" target="_blank" rel="noopener">公式サイト</a>`:'';
  const map=inn.address?`<a class="linkbtn" href="${mapUrl(inn.address)}" target="_blank" rel="noopener">地図</a>`:'';
  const image=inn.imageUrl?`<img class="cardimage" src="${esc(inn.imageUrl)}" alt="${esc(inn.name)}の写真" loading="lazy" onerror="this.style.display='none'">`:'';
+ const ratingCells=inn.source==='rakuten'?`<div class="rating">総合<b>${n(inn.overall).toFixed(1)}</b></div><div class="rating">お風呂<b>${n(inn.bath).toFixed(1)}</b></div><div class="rating">食事平均<b>${n(inn.meal).toFixed(1)}</b></div><div class="rating">口コミ<b>${n(inn.reviewCount).toLocaleString()}</b></div>`:`<div class="rating">総合<b>${n(inn.overall).toFixed(1)}</b></div><div class="rating">お風呂<b>${n(inn.bath).toFixed(1)}</b></div><div class="rating">夕食<b>${n(inn.dinner).toFixed(1)}</b></div><div class="rating">朝食<b>${n(inn.breakfast).toFixed(1)}</b></div>`;
  return `<article class="card">${image}
    <div class="cardtop"><div><h4>${esc(inn.name)}</h4><div class="meta">${esc(inn.pref)} ${esc(inn.area||'')} ・ ${fmtPrice(inn.price)}</div></div>${match?`<div class="score">${match}%<small>一致度</small></div>`:''}</div>
    <div class="tags">${tags||'<span class="small">条件タグ未登録</span>'}</div>
-   <div class="ratings">
-    <div class="rating">総合<b>${n(inn.overall).toFixed(1)}</b></div><div class="rating">風呂<b>${n(inn.bath).toFixed(1)}</b></div>
-    <div class="rating">夕食<b>${n(inn.dinner).toFixed(1)}</b></div><div class="rating">朝食<b>${n(inn.breakfast).toFixed(1)}</b></div>
-   </div>
+   <div class="ratings">${ratingCells}</div>
    ${inn.memo?`<div class="memo">${esc(inn.memo)}</div>`:''}
    <div class="cardactions"><button class="linkbtn fav ${on?'on':''}" onclick="toggleFav('${inn.id}')">${on?'♥ お気に入り済':'♡ お気に入り'}</button>${site}${map}
     ${manage?`<button class="linkbtn" onclick="editInn('${inn.id}')">編集</button><button class="linkbtn fav" onclick="deleteInn('${inn.id}')">削除</button>`:''}
@@ -403,7 +401,7 @@ function mapRakuten(payload){
  return rows.map((row,i)=>{
   const h=findNestedPart(row,'hotelBasicInfo')||{};const ri=findNestedPart(row,'hotelRatingInfo')||{};const di=findNestedPart(row,'hotelDetailInfo')||{};
   const text=[h.hotelName,h.hotelSpecial,di.hotelSpecial,di.hotelCaption,h.access].filter(Boolean).join(' ');
-  return {id:'rakuten_'+(h.hotelNo||i),name:h.hotelName||h.hotelKanaName||'名称未取得',pref:h.address1||'',area:h.address2||'',address:[h.address1,h.address2].filter(Boolean).join(''),price:n(h.hotelMinCharge),url:h.hotelInformationUrl||h.planListUrl||'',imageUrl:h.hotelImageUrl||h.hotelThumbnailUrl||'',overall:n(ri.reviewAverage||h.reviewAverage),bath:n(ri.bathReview||h.bathReview),dinner:n(ri.dinnerReview||h.dinnerReview),breakfast:n(ri.breakfastReview||h.breakfastReview),features:apiFeatures(text),memo:'楽天トラベルAPI取得結果。料金・空室・プラン内容は公式予約ページで確認してください。'+(di.hotelSpecial||h.hotelSpecial?' '+(di.hotelSpecial||h.hotelSpecial):'')};
+  return {id:'rakuten_'+(h.hotelNo||i),name:h.hotelName||h.hotelKanaName||'名称未取得',pref:h.address1||'',area:h.address2||'',address:[h.address1,h.address2].filter(Boolean).join(''),price:n(h.hotelMinCharge),url:h.hotelInformationUrl||h.planListUrl||'',imageUrl:h.hotelImageUrl||h.hotelThumbnailUrl||'',overall:n(ri.reviewAverage||h.reviewAverage),bath:n(ri.bathAverage||h.bathAverage),meal:n(ri.mealAverage||h.mealAverage),dinner:n(ri.mealAverage||h.mealAverage),breakfast:n(ri.mealAverage||h.mealAverage),reviewCount:n(h.reviewCount||ri.reviewCount),source:'rakuten',features:apiFeatures(text),memo:'楽天トラベルAPI取得結果。料金・空室・プラン内容は公式予約ページで確認してください。'+(di.hotelSpecial||h.hotelSpecial?' '+(di.hotelSpecial||h.hotelSpecial):'')};
  });
 }
 let apiPage={onsen:1,food:1,all:1};
