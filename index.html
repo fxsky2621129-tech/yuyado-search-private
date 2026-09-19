@@ -402,7 +402,7 @@ async function runRakuten(kind,page=1){
  const button=document.querySelector('[data-search-kind="'+kind+'"]');if(button){button.disabled=true;button.textContent='検索中…'}
  box.innerHTML='<div class="empty" style="grid-column:1/-1">楽天トラベルから宿泊施設を取得しています…</div>';
  const p=new URLSearchParams({applicationId:cfg.appId,accessKey:cfg.accessKey,format:'json',formatVersion:'2',hits:'30',page:String(page),datumType:'1'});const keyword=apiKeyword(kind);if(keyword)p.set('keyword',keyword);
- try{const res=await fetch('https://app.rakuten.co.jp/services/api/Travel/SimpleHotelSearch/20170426?'+p.toString());const json=await res.json();if(!res.ok||json.error)throw new Error(json.error_description||json.error||'APIエラー');
+ try{const res=await fetch('https://openapi.rakuten.co.jp/engine/api/Travel/SimpleHotelSearch/20170426?'+p.toString());const json=await res.json();if(!res.ok||json.error)throw new Error(json.error_description||json.error||'APIエラー');
   const rows=mapRakuten(json);apiPage[kind]=page;document.getElementById(prefix+'ResultCount').textContent='('+rows.length+'件・楽天API取得)';
   render(rows.map(inn=>({inn,match:0})),prefix+'Results');
   const next=rows.length>=30?'<button class="btn secondary" onclick="runRakuten(\''+kind+'\','+(page+1)+')">次の30件</button>':'';
