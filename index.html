@@ -400,14 +400,14 @@ async function runRakuten(kind,page=1){
  const cfg=getRakutenConfig();const prefix={onsen:'o',food:'f',all:'a'}[kind];const box=document.getElementById(prefix+'Results');
  if(!cfg.appId||!cfg.accessKey){box.innerHTML='<div class="notice" style="grid-column:1/-1">先に「楽天トラベルAPI接続設定」にアプリIDとアクセスキーを入力してください。</div>';return}
  const button=document.querySelector('[data-search-kind="'+kind+'"]');if(button){button.disabled=true;button.textContent='検索中…'}
- box.innerHTML='<div class="empty" style="grid-column:1/-1">楽天トラベルから宿泊施設を取得しています…</div>';
+ box.innerHTML='<div class="empty" style="grid-column:1/-1">楽天トラベルからキーワードで宿泊施設を取得しています…</div>';
  const p=new URLSearchParams({applicationId:cfg.appId,accessKey:cfg.accessKey,format:'json',formatVersion:'2',hits:'30',page:String(page),datumType:'1'});const keyword=apiKeyword(kind);if(keyword)p.set('keyword',keyword);
- try{const res=await fetch('https://openapi.rakuten.co.jp/engine/api/Travel/SimpleHotelSearch/20170426?'+p.toString());const json=await res.json();if(!res.ok||json.error)throw new Error(json.error_description||json.error||'APIエラー');
+ try{const res=await fetch('https://openapi.rakuten.co.jp/engine/api/Travel/KeywordHotelSearch/20170426?'+p.toString());const json=await res.json();if(!res.ok||json.error)throw new Error(json.error_description||json.error||'APIエラー');
   const rows=mapRakuten(json);apiPage[kind]=page;document.getElementById(prefix+'ResultCount').textContent='('+rows.length+'件・楽天API取得)';
   render(rows.map(inn=>({inn,match:0})),prefix+'Results');
   const next=rows.length>=30?'<button class="btn secondary" onclick="runRakuten(\''+kind+'\','+(page+1)+')">次の30件</button>':'';
   if(next)box.insertAdjacentHTML('beforeend','<div class="actions" style="grid-column:1/-1">'+next+'</div>');
- }catch(e){box.innerHTML='<div class="notice" style="grid-column:1/-1">楽天APIから取得できませんでした。アプリID・アクセスキー、通信状態、APIの利用設定を確認してください。<br><span class="small">'+esc(e.message||'通信エラー')+'</span></div>';document.getElementById(prefix+'ResultCount').textContent=''}
+ }catch(e){box.innerHTML='<div class="notice" style="grid-column:1/-1">楽天APIから取得できませんでした。アプリID・アクセスキー、または楽天APIの検索条件を確認してください。<br><span class="small">'+esc(e.message||'通信エラー')+'</span></div>';document.getElementById(prefix+'ResultCount').textContent=''}
  if(button){button.disabled=false;button.textContent='楽天APIで検索'}
 }
 function apiPrompt(kind){const prefix={onsen:'o',food:'f',all:'a'}[kind];document.getElementById(prefix+'Results').innerHTML='<div class="empty" style="grid-column:1/-1">条件を選んで「楽天APIで検索」を押してください。</div>';document.getElementById(prefix+'ResultCount').textContent=''}
