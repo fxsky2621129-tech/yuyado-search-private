@@ -391,14 +391,17 @@ function apiKeyword(kind){
  return [val(fields[0]),val(fields[1]).trim(),...selected(fields[2]).map(k=>words[k])].filter(Boolean).join(' ');
 }
 function apiFeatures(text){const t=(text||'').toLowerCase();const m=[['gensen','源泉かけ流し'],['roomOpenAir','露天風呂付き客室'],['roomHotSpring','客室風呂'],['familyBath','貸切風呂'],['openAir','露天風呂'],['privateBath','完全貸切'],['breakfastBuffet','朝食ビュッフェ'],['dinnerBuffet','夕食ビュッフェ'],['roomDinner','部屋食'],['kaiseki','会席'],['localFood','郷土料理'],['seafood','海鮮']];return m.filter(x=>t.includes(x[1])).map(x=>x[0]);}
+function findNestedPart(value,key){
+ if(!value||typeof value!=='object')return null;
+ if(value[key]&&typeof value[key]==='object')return value[key];
+ if(Array.isArray(value)){for(const item of value){const found=findNestedPart(item,key);if(found)return found}}
+ else{for(const k of Object.keys(value)){if(k==='hotel'||k==='hotels'||k==='result'||k==='results'||k==='item'||k==='items'){const found=findNestedPart(value[k],key);if(found)return found}}}
+ return null;
+}
 function mapRakuten(payload){
  const rows=payload?.hotels||payload?.result?.hotel||[];
  return rows.map((row,i)=>{
-  const parts=Array.isArray(row?.hotel)?row.hotel:[row];
-  const h=parts.find(x=>x&&x.hotelBasicInfo)?.hotelBasicInfo||row?.hotelBasicInfo||parts[0]||{};
-  const ri=parts.find(x=>x&&x.hotelRatingInfo)?.hotelRatingInfo||row?.hotelRatingInfo||{};
-  const di=parts.find(x=>x&&x.hotelDetailInfo)?.hotelDetailInfo||row?.hotelDetailInfo||{};
-  const fi=parts.find(x=>x&&x.hotelFacilitiesInfo)?.hotelFacilitiesInfo||row?.hotelFacilitiesInfo||{};
+  const h=findNestedPart(row,'hotelBasicInfo')||{};const ri=findNestedPart(row,'hotelRatingInfo')||{};const di=findNestedPart(row,'hotelDetailInfo')||{};
   const text=[h.hotelName,h.hotelSpecial,di.hotelSpecial,di.hotelCaption,h.access].filter(Boolean).join(' ');
   return {id:'rakuten_'+(h.hotelNo||i),name:h.hotelName||h.hotelKanaName||'名称未取得',pref:h.address1||'',area:h.address2||'',address:[h.address1,h.address2].filter(Boolean).join(''),price:n(h.hotelMinCharge),url:h.hotelInformationUrl||h.planListUrl||'',imageUrl:h.hotelImageUrl||h.hotelThumbnailUrl||'',overall:n(ri.reviewAverage||h.reviewAverage),bath:n(ri.bathReview||h.bathReview),dinner:n(ri.dinnerReview||h.dinnerReview),breakfast:n(ri.breakfastReview||h.breakfastReview),features:apiFeatures(text),memo:'楽天トラベルAPI取得結果。料金・空室・プラン内容は公式予約ページで確認してください。'+(di.hotelSpecial||h.hotelSpecial?' '+(di.hotelSpecial||h.hotelSpecial):'')};
  });
