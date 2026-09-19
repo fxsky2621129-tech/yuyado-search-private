@@ -65,6 +65,7 @@ main{padding:14px}
 .sort{border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:#fff}
 .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.cardimage{width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:10px;background:#edf2ef}
 .cardtop{display:flex;gap:10px;justify-content:space-between}
 .card h4{margin:0;font-size:17px;line-height:1.4}.meta{color:var(--muted);font-size:12px;margin-top:4px}
 .score{min-width:58px;height:58px;border-radius:50%;background:#edf5f2;display:grid;place-items:center;text-align:center;color:var(--accent);font-weight:900;font-size:18px}
@@ -116,9 +117,19 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 
 <main>
 <div class="filters" id="searchModeBox">
- <div class="field"><label for="searchMode">探す場所</label><select id="searchMode" onchange="changeSearchMode()"><option value="web">インターネットで実在の宿を探す</option><option value="saved">この端末に登録した宿から探す</option></select></div>
+ <div class="field"><label for="searchMode">探す場所</label><select id="searchMode" onchange="changeSearchMode()"><option value="rakuten">楽天トラベルAPIで全国の宿を探す</option><option value="saved">この端末に登録した宿から探す</option><option value="web">Google検索を開く</option></select></div>
  <p id="searchModeHelp" style="font-size:13px;line-height:1.6;margin-bottom:0">地域や条件を選んで「ネットで検索」を押してください。Googleの検索結果を別画面で開きます。</p>
 </div>
+<section class="filters" id="apiSettings">
+ <div class="sectionbar" style="margin-top:0"><h3>楽天トラベルAPI接続設定</h3><button class="btn secondary" type="button" onclick="toggleApiSettings()">表示／非表示</button></div>
+ <p class="small" style="line-height:1.7">楽天ウェブサービスで取得したアプリIDとアクセスキーを入力します。値はこの端末のブラウザ内だけに保存し、GitHubのコードには保存しません。検索時は楽天APIへ送信されます。</p>
+ <div class="grid2" id="apiSettingsFields">
+  <div class="field"><label for="rakutenAppId">アプリID</label><input id="rakutenAppId" type="text" autocomplete="off" placeholder="楽天ウェブサービスのアプリID"></div>
+  <div class="field"><label for="rakutenAccessKey">アクセスキー</label><input id="rakutenAccessKey" type="password" autocomplete="off" placeholder="楽天ウェブサービスのアクセスキー"></div>
+ </div>
+ <div class="actions"><button class="btn primary" type="button" onclick="saveRakutenConfig()">接続設定を保存</button><button class="btn danger" type="button" onclick="clearRakutenConfig()">キーを削除</button></div>
+ <div id="apiConfigMsg" class="savedmsg" role="status"></div>
+</section>
 <aside id="installHelp" class="notice">
  <strong>ホーム画面からアプリとして使えます</strong>
  <p style="margin:6px 0">Android：Chromeの「︙」→「ホーム画面に追加」→「インストール」。iPhone：Safariの共有メニュー→「ホーム画面に追加」。</p>
@@ -247,7 +258,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 </section>
 </main>
 
-<footer>湯宿サーチ v1.3 — 登録データはこの端末に保存</footer>
+<footer>湯宿サーチ v1.4 — 登録データはこの端末に保存</footer>
 </div>
 
 <script>
@@ -276,6 +287,18 @@ const demo=[
  {id:'demo3',demo:true,name:'サンプル宿 C',pref:'長野県',area:'サンプル温泉地',address:'長野県',price:34000,url:'',overall:4.6,bath:4.4,dinner:4.8,breakfast:4.5,features:['roomOpenAir','privateBath','roomDinner','kaiseki','localFood'],memo:'これは操作確認用のサンプルデータです。実在の宿情報ではありません。'},
  {id:'demo4',demo:true,name:'サンプル宿 D',pref:'三重県',area:'サンプル温泉地',address:'三重県',price:26000,url:'',overall:4.4,bath:4.1,dinner:4.7,breakfast:4.6,features:['openAir','breakfastBuffet','dinnerBuffet','seafood'],memo:'これは操作確認用のサンプルデータです。実在の宿情報ではありません。'}
 ];
+
+function getRakutenConfig(){try{return JSON.parse(localStorage.getItem('yuyado_rakuten_api_v1'))||{}}catch(e){return{}}}
+function saveRakutenConfig(){
+ const appId=document.getElementById('rakutenAppId').value.trim(), accessKey=document.getElementById('rakutenAccessKey').value.trim();
+ if(!appId||!accessKey){apiConfigMsg.textContent='アプリIDとアクセスキーを両方入力してください。';return}
+ localStorage.setItem('yuyado_rakuten_api_v1',JSON.stringify({appId,accessKey}));
+ apiConfigMsg.textContent='接続設定をこの端末に保存しました。';
+}
+function clearRakutenConfig(){localStorage.removeItem('yuyado_rakuten_api_v1');document.getElementById('rakutenAppId').value='';document.getElementById('rakutenAccessKey').value='';apiConfigMsg.textContent='接続設定を削除しました。'}
+function toggleApiSettings(){document.getElementById('apiSettingsFields').classList.toggle('hidden')}
+function loadRakutenConfig(){const c=getRakutenConfig();document.getElementById('rakutenAppId').value=c.appId||'';document.getElementById('rakutenAccessKey').value=c.accessKey||''}
+loadRakutenConfig();
 
 function getData(){
   try{const x=JSON.parse(localStorage.getItem(KEY)); return Array.isArray(x)?x:demo}
@@ -320,22 +343,18 @@ function card(inn,match=0,manage=false){
  const tags=(inn.features||[]).map(k=>`<span class="tag ${typeFor(k)==='food'?'food':''}">${labelFor(k)}</span>`).join('');
  const site=inn.url?`<a class="linkbtn" href="${esc(inn.url)}" target="_blank" rel="noopener">公式サイト</a>`:'';
  const map=inn.address?`<a class="linkbtn" href="${mapUrl(inn.address)}" target="_blank" rel="noopener">地図</a>`:'';
- return `<article class="card">
+ const image=inn.imageUrl?`<img class="cardimage" src="${esc(inn.imageUrl)}" alt="${esc(inn.name)}の写真" loading="lazy" onerror="this.style.display='none'">`:'';
+ return `<article class="card">${image}
    <div class="cardtop"><div><h4>${esc(inn.name)}</h4><div class="meta">${esc(inn.pref)} ${esc(inn.area||'')} ・ ${fmtPrice(inn.price)}</div></div>${match?`<div class="score">${match}%<small>一致度</small></div>`:''}</div>
    <div class="tags">${tags||'<span class="small">条件タグ未登録</span>'}</div>
    <div class="ratings">
-    <div class="rating">総合<b>${n(inn.overall).toFixed(1)}</b></div>
-    <div class="rating">風呂<b>${n(inn.bath).toFixed(1)}</b></div>
-    <div class="rating">夕食<b>${n(inn.dinner).toFixed(1)}</b></div>
-    <div class="rating">朝食<b>${n(inn.breakfast).toFixed(1)}</b></div>
+    <div class="rating">総合<b>${n(inn.overall).toFixed(1)}</b></div><div class="rating">風呂<b>${n(inn.bath).toFixed(1)}</b></div>
+    <div class="rating">夕食<b>${n(inn.dinner).toFixed(1)}</b></div><div class="rating">朝食<b>${n(inn.breakfast).toFixed(1)}</b></div>
    </div>
    ${inn.memo?`<div class="memo">${esc(inn.memo)}</div>`:''}
-   <div class="cardactions">
-    <button class="linkbtn fav ${on?'on':''}" onclick="toggleFav('${inn.id}')">${on?'♥ お気に入り済':'♡ お気に入り'}</button>
-    ${site}${map}
+   <div class="cardactions"><button class="linkbtn fav ${on?'on':''}" onclick="toggleFav('${inn.id}')">${on?'♥ お気に入り済':'♡ お気に入り'}</button>${site}${map}
     ${manage?`<button class="linkbtn" onclick="editInn('${inn.id}')">編集</button><button class="linkbtn fav" onclick="deleteInn('${inn.id}')">削除</button>`:''}
-   </div>
- </article>`
+   </div></article>`
 }
 function render(list,target,countId,manage=false){
  document.getElementById(target).innerHTML=list.length?list.map(x=>card(x.inn||x,x.match||0,manage)).join(''):`<div class="empty">条件に合う宿がありません。<br>「宿を登録」から追加してください。</div>`;
@@ -365,6 +384,33 @@ function sortList(list,mode){
  return list.sort(m[mode]||m.match)
 }
 function isWebSearch(){return document.getElementById('searchMode').value==='web'}
+function isApiSearch(){return document.getElementById('searchMode').value==='rakuten'}
+function apiKeyword(kind){
+ const fields={onsen:['oPref','oArea','oC'],food:['fPref','fArea','fC'],all:['aPref','aWord','aC']}[kind];
+ const words={gensen:'源泉かけ流し',roomOpenAir:'露天風呂付き客室',roomHotSpring:'客室風呂 温泉',familyBath:'貸切風呂',openAir:'露天風呂',privateBath:'貸切風呂',breakfastBuffet:'朝食ビュッフェ',dinnerBuffet:'夕食ビュッフェ',roomDinner:'部屋食',kaiseki:'会席料理',localFood:'郷土料理',seafood:'海鮮料理'};
+ return [val(fields[0]),val(fields[1]).trim(),...selected(fields[2]).map(k=>words[k])].filter(Boolean).join(' ');
+}
+function apiFeatures(text){const t=(text||'').toLowerCase();const m=[['gensen','源泉かけ流し'],['roomOpenAir','露天風呂付き客室'],['roomHotSpring','客室風呂'],['familyBath','貸切風呂'],['openAir','露天風呂'],['privateBath','完全貸切'],['breakfastBuffet','朝食ビュッフェ'],['dinnerBuffet','夕食ビュッフェ'],['roomDinner','部屋食'],['kaiseki','会席'],['localFood','郷土料理'],['seafood','海鮮']];return m.filter(x=>t.includes(x[1])).map(x=>x[0]);}
+function mapRakuten(payload){
+ const rows=payload?.hotels||payload?.result?.hotel||[];
+ return rows.map((row,i)=>{const h=row.hotelBasicInfo||row;const text=[h.hotelName,h.hotelSpecial,h.hotelCaption,h.access].filter(Boolean).join(' ');return {id:'rakuten_'+(h.hotelNo||i),name:h.hotelName||'名称未取得',pref:h.address1||'',area:h.address2||'',address:[h.address1,h.address2].filter(Boolean).join(''),price:n(h.hotelMinCharge),url:h.hotelInformationUrl||h.planListUrl||'',imageUrl:h.hotelImageUrl||h.hotelThumbnailUrl||'',overall:n(h.reviewAverage),bath:n(h.bathReview),dinner:n(h.dinnerReview),breakfast:n(h.breakfastReview),features:apiFeatures(text),memo:'楽天トラベルAPI取得結果。料金・空室・プラン内容は公式予約ページで確認してください。'+(h.hotelSpecial?' '+h.hotelSpecial:'')};});
+}
+let apiPage={onsen:1,food:1,all:1};
+async function runRakuten(kind,page=1){
+ const cfg=getRakutenConfig();const prefix={onsen:'o',food:'f',all:'a'}[kind];const box=document.getElementById(prefix+'Results');
+ if(!cfg.appId||!cfg.accessKey){box.innerHTML='<div class="notice" style="grid-column:1/-1">先に「楽天トラベルAPI接続設定」にアプリIDとアクセスキーを入力してください。</div>';return}
+ const button=document.querySelector('[data-search-kind="'+kind+'"]');if(button){button.disabled=true;button.textContent='検索中…'}
+ box.innerHTML='<div class="empty" style="grid-column:1/-1">楽天トラベルから宿泊施設を取得しています…</div>';
+ const p=new URLSearchParams({applicationId:cfg.appId,accessKey:cfg.accessKey,format:'json',formatVersion:'2',hits:'30',page:String(page),datumType:'1'});const keyword=apiKeyword(kind);if(keyword)p.set('keyword',keyword);
+ try{const res=await fetch('https://app.rakuten.co.jp/services/api/Travel/SimpleHotelSearch/20170426?'+p.toString());const json=await res.json();if(!res.ok||json.error)throw new Error(json.error_description||json.error||'APIエラー');
+  const rows=mapRakuten(json);apiPage[kind]=page;document.getElementById(prefix+'ResultCount').textContent='('+rows.length+'件・楽天API取得)';
+  render(rows.map(inn=>({inn,match:0})),prefix+'Results');
+  const next=rows.length>=30?'<button class="btn secondary" onclick="runRakuten(\''+kind+'\','+(page+1)+')">次の30件</button>':'';
+  if(next)box.insertAdjacentHTML('beforeend','<div class="actions" style="grid-column:1/-1">'+next+'</div>');
+ }catch(e){box.innerHTML='<div class="notice" style="grid-column:1/-1">楽天APIから取得できませんでした。アプリID・アクセスキー、通信状態、APIの利用設定を確認してください。<br><span class="small">'+esc(e.message||'通信エラー')+'</span></div>';document.getElementById(prefix+'ResultCount').textContent=''}
+ if(button){button.disabled=false;button.textContent='楽天APIで検索'}
+}
+function apiPrompt(kind){const prefix={onsen:'o',food:'f',all:'a'}[kind];document.getElementById(prefix+'Results').innerHTML='<div class="empty" style="grid-column:1/-1">条件を選んで「楽天APIで検索」を押してください。</div>';document.getElementById(prefix+'ResultCount').textContent=''}
 function webSearchQuery(kind){
  const fields={onsen:['oPref','oArea','oC'],food:['fPref','fArea','fC'],all:['aPref','aWord','aC']}[kind];
  const words={gensen:'源泉かけ流し',roomOpenAir:'露天風呂付き客室',roomHotSpring:'客室風呂 温泉',familyBath:'貸切風呂 家族風呂',openAir:'露天風呂',privateBath:'貸切風呂',breakfastBuffet:'朝食ビュッフェ',dinnerBuffet:'夕食ビュッフェ',roomDinner:'夕食 部屋食',kaiseki:'会席料理',localFood:'郷土料理',seafood:'海鮮料理'};
@@ -381,19 +427,14 @@ function renderWebSearch(kind){
  document.getElementById(prefix+'Results').innerHTML=`<article class="card" style="grid-column:1/-1"><h4>実在する宿をネットで探す</h4><p style="font-size:13px;line-height:1.6">検索条件：${esc(webSearchQuery(kind))}</p><div class="actions">${destinations.map(([label,site])=>`<a class="linkbtn" href="${esc(webSearchUrl(kind,site))}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`).join('')}</div><p class="small" style="line-height:1.7">各リンクはGoogle検索を別画面で開きます。じゃらん・楽天トラベルは掲載サイトを絞って検索します。空室・料金・評価や、希望の条件を満たすかは宿・プランのページで確認してください。</p><p class="small">結果が少ないときは、チェックする条件を減らしてください。通信が必要です。</p></article>`;
 }
 function changeSearchMode(){
- const web=isWebSearch();
- document.getElementById('searchModeHelp').textContent=web?'地域や条件を選んで「ネットで検索」を押してください。Googleの検索結果を別画面で開きます。':'この端末に登録した宿だけを検索します。初期の4件は架空のサンプルです。';
- for(const id of ['oSort','fSort','aSort'])document.getElementById(id).classList.toggle('hidden',web);
- for(const id of ['oPrice','fRating'])document.getElementById(id).closest('.field').classList.toggle('hidden',web);
- document.querySelectorAll('[data-search-kind]').forEach(button=>button.textContent=web?'ネットで検索 ↗':'登録した宿を検索');
- runOnsen();runFood();runAll();
+ const mode=document.getElementById('searchMode').value;const web=mode==='web',api=mode==='rakuten';
+ document.getElementById('searchModeHelp').textContent=api?'地域や条件を選んで「楽天APIで検索」を押すと、楽天トラベル掲載施設をアプリ内に表示します。':'この端末に登録した宿だけを検索します。';
+ for(const id of ['oSort','fSort','aSort'])document.getElementById(id).classList.toggle('hidden',web||api);
+ for(const id of ['oPrice','fRating'])document.getElementById(id).closest('.field').classList.toggle('hidden',web||api);
+ document.querySelectorAll('[data-search-kind]').forEach(button=>button.textContent=api?'楽天APIで検索':web?'ネットで検索 ↗':'登録した宿を検索');
+ if(api){apiPrompt('onsen');apiPrompt('food');apiPrompt('all')}else{runOnsen();runFood();runAll()}
 }
-function submitSearch(kind){
- if(isWebSearch()){
-  renderWebSearch(kind);
-  window.open(webSearchUrl(kind),'_blank','noopener,noreferrer');
- } else ({onsen:runOnsen,food:runFood,all:runAll})[kind]();
-}
+function submitSearch(kind){if(isApiSearch()){runRakuten(kind,1);return}if(isWebSearch()){renderWebSearch(kind);window.open(webSearchUrl(kind),'_blank','noopener,noreferrer');return}({onsen:runOnsen,food:runFood,all:runAll})[kind]();}
 // Keep the links in sync when conditions change, including when pressing Enter.
 document.querySelectorAll('#onsen .filters input,#onsen .filters select,#food .filters input,#food .filters select,#all .filters input,#all .filters select').forEach(input=>{
  input.addEventListener('input',()=>{if(isWebSearch())renderWebSearch(input.closest('.panel').id)});
@@ -401,14 +442,14 @@ document.querySelectorAll('#onsen .filters input,#onsen .filters select,#food .f
 });
 
 function runOnsen(){
- if(isWebSearch()){renderWebSearch('onsen');return;}
+ if(isWebSearch()){renderWebSearch('onsen');return}if(isApiSearch()){apiPrompt('onsen');return}
  data=getData();
  const c=selected('oC'), pref=oPref.value,area=oArea.value.trim(),price=oPrice.value;
  render(sortList(commonFilter(pref,area,price,c),oSort.value),'oResults','oResultCount')
 }
 function resetOnsen(){oPref.value='';oArea.value='';oPrice.value='';document.querySelectorAll('.oC').forEach(x=>x.checked=false);runOnsen()}
 function runFood(){
- if(isWebSearch()){renderWebSearch('food');return;}
+ if(isWebSearch()){renderWebSearch('food');return}if(isApiSearch()){apiPrompt('food');return}
  data=getData();
  const c=selected('fC'),pref=fPref.value,area=fArea.value.trim(),min=fRating.value;
  let list=commonFilter(pref,area,'',c).filter(x=>!min||(Math.max(n(x.inn.dinner),n(x.inn.breakfast))>=n(min)));
@@ -416,7 +457,7 @@ function runFood(){
 }
 function resetFood(){fPref.value='';fArea.value='';fRating.value='';document.querySelectorAll('.fC').forEach(x=>x.checked=false);runFood()}
 function runAll(){
- if(isWebSearch()){renderWebSearch('all');return;}
+ if(isWebSearch()){renderWebSearch('all');return}if(isApiSearch()){apiPrompt('all');return}
  data=getData();
  const c=selected('aC'),pref=aPref.value,w=aWord.value.trim().toLowerCase();
  let list=commonFilter(pref,'','',c).filter(x=>!w||[x.inn.name,x.inn.area,x.inn.address,x.inn.memo].join(' ').toLowerCase().includes(w));
