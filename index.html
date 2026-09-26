@@ -122,7 +122,8 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
  <p id="searchModeHelp" style="font-size:13px;line-height:1.6;margin-bottom:0">地域や条件を選んで「ネットで検索」を押してください。Googleの検索結果を別画面で開きます。</p>
 </div>
 <section class="filters" id="apiSettings">
- <div class="sectionbar" style="margin-top:0"><h3>楽天トラベルAPI接続設定</h3><button class="btn secondary" type="button" onclick="toggleApiSettings()">表示／非表示</button></div>
+ <div class="sectionbar" style="margin-top:0"><h3>楽天トラベルAPI接続設定</h3><button class="btn secondary" type="button" id="apiSettingsToggle" aria-controls="apiSettingsBody" aria-expanded="true" onclick="toggleApiSettings()">非表示</button></div>
+ <div id="apiSettingsBody">
  <p class="small" style="line-height:1.7">楽天ウェブサービスで取得したアプリIDとアクセスキーを入力します。値はこの端末のブラウザ内だけに保存し、GitHubのコードには保存しません。検索時は楽天APIへ送信されます。</p>
  <div class="grid2" id="apiSettingsFields">
   <div class="field"><label for="rakutenAppId">アプリID</label><input id="rakutenAppId" type="text" autocomplete="off" placeholder="楽天ウェブサービスのアプリID"></div>
@@ -130,6 +131,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
  </div>
  <div class="actions"><button class="btn primary" type="button" onclick="saveRakutenConfig()">接続設定を保存</button><button class="btn danger" type="button" onclick="clearRakutenConfig()">キーを削除</button></div>
  <div id="apiConfigMsg" class="savedmsg" role="status"></div>
+ </div>
 </section>
 <aside id="installHelp" class="notice">
  <strong>ホーム画面からアプリとして使えます</strong>
@@ -167,18 +169,19 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 <section id="daybath" class="panel">
   <div class="hero">
     <h2>🛁 スーパー銭湯の貸切・家族風呂を探す</h2>
-    <p>全国の日帰り入浴施設を対象に、地域と浴室の種類を指定して探します。</p>
+    <p>現在地の近く、または指定した地域で、貸切・家族風呂のある日帰り施設を探します。</p>
   </div>
   <div class="filters">
+    <div class="field" style="margin-bottom:12px"><label for="dLocationMode">探す範囲</label><select id="dLocationMode" onchange="changeDayBathLocationMode()"><option value="nearby">現在地の近く</option><option value="region">都道府県・地域を指定</option></select></div>
     <div class="grid2">
-      <div class="field"><label for="dPref">都道府県</label><select id="dPref"></select></div>
+      <div class="field"><label for="dPref">都道府県（地域指定時）</label><select id="dPref"></select></div>
       <div class="field"><label for="dArea">市区町村・地域</label><input id="dArea" placeholder="例：横浜、別府、札幌"></div>
       <div class="field"><label for="dBath">お風呂の種類</label><select id="dBath"><option value="貸切風呂 家族風呂">貸切風呂・家族風呂</option><option value="家族風呂">家族風呂</option><option value="貸切風呂">貸切風呂</option><option value="貸切露天風呂">貸切露天風呂</option></select></div>
       <div class="field"><label for="dWord">追加キーワード</label><input id="dWord" placeholder="例：予約可、個室、子連れ"></div>
     </div>
-    <div class="actions"><button class="btn primary" type="button" onclick="searchDayBath()">施設を探す ↗</button><button class="btn secondary" type="button" onclick="resetDayBath()">条件をリセット</button></div>
+    <div class="actions"><button class="btn primary" type="button" id="dSearchButton" onclick="searchDayBath()">現在地の近くを探す ↗</button><button class="btn secondary" type="button" onclick="resetDayBath()">条件をリセット</button></div>
   </div>
-  <div class="notice">検索結果は外部サイトで開きます。スーパー銭湯以外の入浴施設も含まれる場合があります。貸切の有無、日帰り利用、予約方法・料金・営業時間は各施設の公式情報で確認してください。</div>
+  <div class="notice">検索結果はGoogleマップで開きます。「現在地の近く」では位置情報の許可が必要です。取得した位置は端末に保存せず、検索時にGoogleマップに渡します。結果にはスーパー銭湯以外の入浴施設も含まれる場合があります。貸切の有無、日帰り利用、予約方法・料金・営業時間は各施設の公式情報で確認してください。</div>
   <div id="dResults" class="cards" aria-live="polite"></div>
 </section>
 
@@ -277,7 +280,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 </section>
 </main>
 
-<footer>湯宿サーチ v1.7 — 登録データはこの端末に保存</footer>
+<footer>湯宿サーチ v1.8 — 登録データはこの端末に保存</footer>
 </div>
 
 <script>
@@ -315,9 +318,20 @@ function saveRakutenConfig(){
  apiConfigMsg.textContent='接続設定をこの端末に保存しました。';
 }
 function clearRakutenConfig(){localStorage.removeItem('yuyado_rakuten_api_v1');document.getElementById('rakutenAppId').value='';document.getElementById('rakutenAccessKey').value='';apiConfigMsg.textContent='接続設定を削除しました。'}
-function toggleApiSettings(){document.getElementById('apiSettingsFields').classList.toggle('hidden')}
+function applyApiSettingsVisibility(hidden){
+ document.getElementById('apiSettingsBody').classList.toggle('hidden',hidden);
+ const button=document.getElementById('apiSettingsToggle');
+ button.textContent=hidden?'表示':'非表示';button.setAttribute('aria-expanded',String(!hidden));
+}
+function toggleApiSettings(){
+ const hidden=!document.getElementById('apiSettingsBody').classList.contains('hidden');
+ localStorage.setItem('yuyado_api_settings_hidden',String(hidden));
+ applyApiSettingsVisibility(hidden);
+}
 function loadRakutenConfig(){const c=getRakutenConfig();document.getElementById('rakutenAppId').value=c.appId||'';document.getElementById('rakutenAccessKey').value=c.accessKey||''}
 loadRakutenConfig();
+const savedApiVisibility=localStorage.getItem('yuyado_api_settings_hidden');
+applyApiSettingsVisibility(savedApiVisibility===null?Boolean(getRakutenConfig().appId&&getRakutenConfig().accessKey):savedApiVisibility==='true');
 
 function getData(){
   try{const x=JSON.parse(localStorage.getItem(KEY)); return Array.isArray(x)?x:demo}
@@ -456,22 +470,50 @@ function renderWebSearch(kind){
  const destinations=[['Googleで検索結果を開く',''],['じゃらん掲載の宿を探す','jalan.net'],['楽天トラベル掲載の宿を探す','travel.rakuten.co.jp']];
  document.getElementById(prefix+'Results').innerHTML=`<article class="card" style="grid-column:1/-1"><h4>実在する宿をネットで探す</h4><p style="font-size:13px;line-height:1.6">検索条件：${esc(webSearchQuery(kind))}</p><div class="actions">${destinations.map(([label,site])=>`<a class="linkbtn" href="${esc(webSearchUrl(kind,site))}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`).join('')}</div><p class="small" style="line-height:1.7">各リンクはGoogle検索を別画面で開きます。じゃらん・楽天トラベルは掲載サイトを絞って検索します。空室・料金・評価や、希望の条件を満たすかは宿・プランのページで確認してください。</p><p class="small">結果が少ないときは、チェックする条件を減らしてください。通信が必要です。</p></article>`;
 }
+let dayBathRequest=0;
+function changeDayBathLocationMode(){
+ const nearby=val('dLocationMode')==='nearby';
+ for(const id of ['dPref','dArea'])document.getElementById(id).disabled=nearby;
+ document.getElementById('dSearchButton').textContent=nearby?'現在地の近くを探す ↗':'指定地域を地図で探す ↗';
+ dayBathRequest++;document.getElementById('dSearchButton').disabled=false;document.getElementById('dResults').innerHTML='';
+}
 function dayBathQuery(){
- return [val('dPref'),val('dArea').trim(),'スーパー銭湯 日帰り',val('dBath'),val('dWord').trim()].filter(Boolean).join(' ');
+ const bath=val('dBath')==='貸切風呂 家族風呂'?'家族風呂':val('dBath');
+ return ['スーパー銭湯',bath,val('dWord').trim()].filter(Boolean).join(' ');
+}
+function openDayBathMap(query,label){
+ const url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(query);
+ document.getElementById('dResults').innerHTML='<article class="card" style="grid-column:1/-1"><h4>'+esc(label)+'</h4><p class="small">Googleマップで候補を探します。距離順や貸切利用の可否を保証するものではありません。</p><a class="linkbtn" href="'+esc(url)+'" rel="noreferrer">検索結果を地図で開く ↗</a></article>';
+ window.location.assign(url);
 }
 function searchDayBath(){
- const query=dayBathQuery();
- const google='https://www.google.com/search?hl=ja&q='+encodeURIComponent(query);
- const maps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(query);
- document.getElementById('dResults').innerHTML='<article class="card" style="grid-column:1/-1"><h4>検索条件</h4><p class="meta">'+esc(query)+'</p><div class="actions"><a class="linkbtn" target="_blank" rel="noopener noreferrer" href="'+esc(google)+'">ウェブで施設を探す ↗</a><a class="linkbtn" target="_blank" rel="noopener noreferrer" href="'+esc(maps)+'">地図で施設を探す ↗</a></div><p class="small">見つかった施設の公式ページで、貸切風呂・家族風呂の利用条件を確認してください。</p></article>';
- window.open(google,'_blank','noopener,noreferrer');
+ const request=++dayBathRequest,query=dayBathQuery(),button=document.getElementById('dSearchButton'),box=document.getElementById('dResults');
+ if(val('dLocationMode')==='region'){
+  openDayBathMap([val('dPref'),val('dArea').trim(),query].filter(Boolean).join(' '),'指定地域の施設');return;
+ }
+ if(!navigator.geolocation){box.innerHTML='<div class="notice">このブラウザでは現在地を取得できません。「都道府県・地域を指定」で検索してください。</div>';return}
+ button.disabled=true;button.textContent='現在地を取得中…';
+ box.innerHTML='<div class="notice" role="status">位置情報の使用を許可してください。現在地の近くの施設を探します。</div>';
+ const finish=()=>{button.disabled=false;button.textContent='現在地の近くを探す ↗'};
+ navigator.geolocation.getCurrentPosition(position=>{
+  if(request!==dayBathRequest)return;
+  finish();
+  const lat=position.coords.latitude,lng=position.coords.longitude;
+  openDayBathMap(query+' near '+lat+','+lng,'現在地周辺の施設');
+ },error=>{
+  if(request!==dayBathRequest)return;
+  finish();
+  const messages={1:'位置情報が許可されていません。ブラウザのサイト設定で位置情報を許可するか、地域を指定してください。',2:'現在地を取得できませんでした。位置情報を有効にして再試行するか、地域を指定してください。',3:'現在地の取得が時間切れになりました。もう一度試すか、地域を指定してください。'};
+  box.innerHTML='<div class="notice" role="alert">'+esc(messages[error.code]||'現在地を取得できませんでした。地域を指定してください。')+'</div>';
+ },{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
 }
 function resetDayBath(){
- dPref.value='';dArea.value='';dBath.selectedIndex=0;dWord.value='';dResults.innerHTML='';
+ dPref.value='';dArea.value='';dBath.selectedIndex=0;dWord.value='';dLocationMode.value='nearby';changeDayBathLocationMode();
 }
 document.querySelectorAll('#daybath input').forEach(input=>input.addEventListener('keydown',event=>{
  if(event.key==='Enter'){event.preventDefault();searchDayBath()}
 }));
+changeDayBathLocationMode();
 function changeSearchMode(){
  const mode=document.getElementById('searchMode').value;const web=mode==='web',api=mode==='rakuten';
  document.getElementById('searchModeHelp').textContent=api?'地域や条件を選んで「楽天APIで検索」を押すと、楽天トラベル掲載施設をアプリ内に表示します。':'この端末に登録した宿だけを検索します。';
@@ -575,6 +617,6 @@ function importData(ev){
 
 changeSearchMode();renderFavorites();renderManage();
 </script>
-<script src="./pwa.js"></script>
+<script src="./pwa.js?v=1.8.0"></script>
 </body>
 </html>
