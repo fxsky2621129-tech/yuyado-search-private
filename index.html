@@ -31,7 +31,7 @@ header{
 .brand p{font-size:12px;margin:0;opacity:.82}
 .countpill{background:rgba(255,255,255,.16);padding:8px 12px;border-radius:999px;font-size:12px;white-space:nowrap}
 nav{
-  display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:#fff;padding:8px;
+  display:grid;grid-template-columns:repeat(6,1fr);gap:6px;background:#fff;padding:8px;
   position:sticky;top:77px;z-index:15;border-bottom:1px solid var(--line)
 }
 .tab{border:0;background:#f5f7f6;border-radius:11px;padding:10px 6px;color:#45524e;font-weight:700;font-size:12px}
@@ -109,6 +109,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 
 <nav>
   <button class="tab active" data-tab="onsen">♨️ 温泉</button>
+  <button class="tab" data-tab="daybath">🛁 日帰り貸切風呂</button>
   <button class="tab" data-tab="food">🍽️ 食事</button>
   <button class="tab" data-tab="all">⭐ こだわり</button>
   <button class="tab" data-tab="favorites">♡ お気に入り</button>
@@ -161,6 +162,24 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
   </div>
   <div class="sectionbar"><h3>検索結果 <span id="oResultCount"></span></h3><select id="oSort" class="sort" onchange="runOnsen()"><option value="match">一致度順</option><option value="bath">風呂評価順</option><option value="price">料金の安い順</option></select></div>
   <div id="oResults" class="cards"></div>
+</section>
+
+<section id="daybath" class="panel">
+  <div class="hero">
+    <h2>🛁 スーパー銭湯の貸切・家族風呂を探す</h2>
+    <p>全国の日帰り入浴施設を対象に、地域と浴室の種類を指定して探します。</p>
+  </div>
+  <div class="filters">
+    <div class="grid2">
+      <div class="field"><label for="dPref">都道府県</label><select id="dPref"></select></div>
+      <div class="field"><label for="dArea">市区町村・地域</label><input id="dArea" placeholder="例：横浜、別府、札幌"></div>
+      <div class="field"><label for="dBath">お風呂の種類</label><select id="dBath"><option value="貸切風呂 家族風呂">貸切風呂・家族風呂</option><option value="家族風呂">家族風呂</option><option value="貸切風呂">貸切風呂</option><option value="貸切露天風呂">貸切露天風呂</option></select></div>
+      <div class="field"><label for="dWord">追加キーワード</label><input id="dWord" placeholder="例：予約可、個室、子連れ"></div>
+    </div>
+    <div class="actions"><button class="btn primary" type="button" onclick="searchDayBath()">施設を探す ↗</button><button class="btn secondary" type="button" onclick="resetDayBath()">条件をリセット</button></div>
+  </div>
+  <div class="notice">検索結果は外部サイトで開きます。スーパー銭湯以外の入浴施設も含まれる場合があります。貸切の有無、日帰り利用、予約方法・料金・営業時間は各施設の公式情報で確認してください。</div>
+  <div id="dResults" class="cards" aria-live="polite"></div>
 </section>
 
 <section id="food" class="panel">
@@ -258,7 +277,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 </section>
 </main>
 
-<footer>湯宿サーチ v1.6 — 登録データはこの端末に保存</footer>
+<footer>湯宿サーチ v1.7 — 登録データはこの端末に保存</footer>
 </div>
 
 <script>
@@ -312,7 +331,7 @@ let data=getData(); if(!localStorage.getItem(KEY)) setData(data);
 function initSelect(id){
  const s=document.getElementById(id); s.innerHTML=prefs.map((p,i)=>`<option value="${p}">${i? p:'全国'}</option>`).join('');
 }
-['oPref','fPref','aPref','mPref'].forEach(initSelect);
+['oPref','fPref','aPref','mPref','dPref'].forEach(initSelect);
 
 function makeFeatureChecks(target, cls='mC'){
  document.getElementById(target).innerHTML=featureDefs.map(([k,l,t])=>`<label class="check"><input type="checkbox" class="${cls}" value="${k}">${l}</label>`).join('');
@@ -324,6 +343,8 @@ document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
  b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active');
+ document.getElementById('searchModeBox').classList.toggle('hidden',b.dataset.tab==='daybath');
+ document.getElementById('apiSettings').classList.toggle('hidden',b.dataset.tab==='daybath');
  if(b.dataset.tab==='favorites') renderFavorites();
  if(b.dataset.tab==='manage') renderManage();
 }));
@@ -435,6 +456,22 @@ function renderWebSearch(kind){
  const destinations=[['Googleで検索結果を開く',''],['じゃらん掲載の宿を探す','jalan.net'],['楽天トラベル掲載の宿を探す','travel.rakuten.co.jp']];
  document.getElementById(prefix+'Results').innerHTML=`<article class="card" style="grid-column:1/-1"><h4>実在する宿をネットで探す</h4><p style="font-size:13px;line-height:1.6">検索条件：${esc(webSearchQuery(kind))}</p><div class="actions">${destinations.map(([label,site])=>`<a class="linkbtn" href="${esc(webSearchUrl(kind,site))}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`).join('')}</div><p class="small" style="line-height:1.7">各リンクはGoogle検索を別画面で開きます。じゃらん・楽天トラベルは掲載サイトを絞って検索します。空室・料金・評価や、希望の条件を満たすかは宿・プランのページで確認してください。</p><p class="small">結果が少ないときは、チェックする条件を減らしてください。通信が必要です。</p></article>`;
 }
+function dayBathQuery(){
+ return [val('dPref'),val('dArea').trim(),'スーパー銭湯 日帰り',val('dBath'),val('dWord').trim()].filter(Boolean).join(' ');
+}
+function searchDayBath(){
+ const query=dayBathQuery();
+ const google='https://www.google.com/search?hl=ja&q='+encodeURIComponent(query);
+ const maps='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(query);
+ document.getElementById('dResults').innerHTML='<article class="card" style="grid-column:1/-1"><h4>検索条件</h4><p class="meta">'+esc(query)+'</p><div class="actions"><a class="linkbtn" target="_blank" rel="noopener noreferrer" href="'+esc(google)+'">ウェブで施設を探す ↗</a><a class="linkbtn" target="_blank" rel="noopener noreferrer" href="'+esc(maps)+'">地図で施設を探す ↗</a></div><p class="small">見つかった施設の公式ページで、貸切風呂・家族風呂の利用条件を確認してください。</p></article>';
+ window.open(google,'_blank','noopener,noreferrer');
+}
+function resetDayBath(){
+ dPref.value='';dArea.value='';dBath.selectedIndex=0;dWord.value='';dResults.innerHTML='';
+}
+document.querySelectorAll('#daybath input').forEach(input=>input.addEventListener('keydown',event=>{
+ if(event.key==='Enter'){event.preventDefault();searchDayBath()}
+}));
 function changeSearchMode(){
  const mode=document.getElementById('searchMode').value;const web=mode==='web',api=mode==='rakuten';
  document.getElementById('searchModeHelp').textContent=api?'地域や条件を選んで「楽天APIで検索」を押すと、楽天トラベル掲載施設をアプリ内に表示します。':'この端末に登録した宿だけを検索します。';
