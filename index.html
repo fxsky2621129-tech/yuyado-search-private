@@ -280,7 +280,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 </section>
 </main>
 
-<footer>湯宿サーチ v1.9 — 登録データはこの端末に保存</footer>
+<footer>湯宿サーチ v1.10 — 登録データはこの端末に保存</footer>
 </div>
 
 <script>
@@ -471,11 +471,13 @@ function renderWebSearch(kind){
  document.getElementById(prefix+'Results').innerHTML=`<article class="card" style="grid-column:1/-1"><h4>実在する宿をネットで探す</h4><p style="font-size:13px;line-height:1.6">検索条件：${esc(webSearchQuery(kind))}</p><div class="actions">${destinations.map(([label,site])=>`<a class="linkbtn" href="${esc(webSearchUrl(kind,site))}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`).join('')}</div><p class="small" style="line-height:1.7">各リンクはGoogle検索を別画面で開きます。じゃらん・楽天トラベルは掲載サイトを絞って検索します。空室・料金・評価や、希望の条件を満たすかは宿・プランのページで確認してください。</p><p class="small">結果が少ないときは、チェックする条件を減らしてください。通信が必要です。</p></article>`;
 }
 let dayBathRequest=0;
+let dayBathTimer;
+function showDayBathResults(){document.getElementById('dResults').scrollIntoView({behavior:'smooth',block:'start'})}
 function changeDayBathLocationMode(){
  const nearby=val('dLocationMode')==='nearby';
  for(const id of ['dPref','dArea'])document.getElementById(id).disabled=nearby;
  document.getElementById('dSearchButton').textContent=nearby?'現在地周辺を詳しく探す':'指定地域を詳しく探す';
- dayBathRequest++;document.getElementById('dSearchButton').disabled=false;document.getElementById('dResults').innerHTML='';
+ clearTimeout(dayBathTimer);dayBathRequest++;document.getElementById('dSearchButton').disabled=false;document.getElementById('dResults').innerHTML='';
 }
 function dayBathTerms(){
  const groups={
@@ -490,7 +492,7 @@ function dayBathQuery(){return [dayBathTerms()[0],val('dWord').trim()].filter(Bo
 function openDayBathMap(query,label){
  // Keep each map search simple; multiple required synonyms exclude relevant facilities.
  const nearby=val('dLocationMode')==='nearby';
- const anchor=nearby?query.slice(query.lastIndexOf(' near ')):'';
+ const anchor=nearby?(query.includes(' near ')?query.slice(query.lastIndexOf(' near ')):' near me'):'';
  const region=nearby?'':[val('dPref'),val('dArea').trim()].filter(Boolean).join(' ');
  const terms=dayBathTerms(),extra=val('dWord').trim();
  const link=(url,title)=>'<a class="linkbtn" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+esc(title)+' ↗</a>';
@@ -498,29 +500,45 @@ function openDayBathMap(query,label){
  const synonyms='('+terms.map(term=>'"'+term+'"').join(' OR ')+')';
  const webQuery=[region,synonyms,'(日帰り OR 立ち寄り OR 立寄り OR 時間貸し)',extra].filter(Boolean).join(' ');
  const web=tail=>'https://www.google.com/search?hl=ja&q='+encodeURIComponent(webQuery+' '+tail);
- document.getElementById('dResults').innerHTML='<article class="card" style="grid-column:1/-1"><h4>'+esc(label)+'：表記を変えて探す</h4><p class="small">スーパー銭湯に限定せず、日帰り温泉・家族湯専門店も対象にします。下のボタンはそれぞれ別の検索です。</p><div class="actions">'+maps+'</div></article>'
+ document.getElementById('dResults').innerHTML='<div id="dLocationStatus" class="notice" role="status" style="grid-column:1/-1"></div><article class="card" style="grid-column:1/-1"><h4>'+esc(label)+'：表記を変えて探す</h4><p class="small">スーパー銭湯に限定せず、日帰り温泉・家族湯専門店も対象にします。下のボタンはそれぞれ別の検索です。</p><div class="actions">'+maps+'</div></article>'
  +'<article class="card" style="grid-column:1/-1"><h4>貸切風呂の掲載ページを詳しく探す</h4><p class="small">'+(nearby?'このウェブ検索は全国が対象です。地域を絞る場合は「都道府県・地域を指定」に切り替えてください。':'検索地域：'+esc(region||'全国'))+'</p><div class="actions">'+link(web(''),'日帰りの貸切・家族風呂をまとめて検索')+link(web('(予約 OR 利用案内 OR 料金)'),'利用案内・予約情報を探す')+link(web('site:onsen.nifty.com'),'ニフティ温泉の掲載情報を探す')+link('https://onsen.nifty.com/ft-kashikiri/','貸切・個室風呂の全国一覧')+'</div><p class="small">検索候補は貸切風呂の存在や現在の営業を確認済みの一覧ではありません。公式ページで「日帰りで貸切利用できる浴室」があるか確認してください。</p></article>';
 }
 function searchDayBath(){
- const request=++dayBathRequest,query=dayBathQuery(),button=document.getElementById('dSearchButton'),box=document.getElementById('dResults');
+ clearTimeout(dayBathTimer);
+ const request=++dayBathRequest,query=dayBathQuery(),button=document.getElementById('dSearchButton');
+ const status=message=>{const el=document.getElementById('dLocationStatus');if(el)el.textContent=message};
+ const finish=()=>{clearTimeout(dayBathTimer);button.disabled=false;button.textContent=val('dLocationMode')==='nearby'?'現在地周辺を詳しく探す':'指定地域を詳しく探す'};
  if(val('dLocationMode')==='region'){
-  openDayBathMap([val('dPref'),val('dArea').trim(),query].filter(Boolean).join(' '),'指定地域の施設');return;
+  openDayBathMap([val('dPref'),val('dArea').trim(),query].filter(Boolean).join(' '),'指定地域の施設');
+  status('下の「地図検索」ボタンを選ぶと検索結果が開きます。');showDayBathResults();return;
  }
- if(!navigator.geolocation){box.innerHTML='<div class="notice">このブラウザでは現在地を取得できません。「都道府県・地域を指定」で検索してください。</div>';return}
+ // Show usable map links immediately, even while location permission is pending.
+ openDayBathMap(query+' near me','近くの施設を探す');
+ status('検索リンクを表示しました。現在地を取得中です。位置情報の使用を許可してください。');
+ showDayBathResults();
+ const fallback=message=>{
+  if(request!==dayBathRequest)return;
+  dayBathRequest++;finish();
+  status(message+' 下の地図検索はそのまま使えます。Googleマップ側の位置情報に基づいて「近く」を検索します。位置が違う場合は地域を指定してください。');
+ };
+ if(!navigator.geolocation||!window.isSecureContext){
+  fallback('このブラウザでは現在地を取得できません。');return;
+ }
  button.disabled=true;button.textContent='現在地を取得中…';
- box.innerHTML='<div class="notice" role="status">位置情報の使用を許可してください。現在地の近くの施設を探します。</div>';
- const finish=()=>{button.disabled=false;button.textContent='現在地周辺を詳しく探す'};
- navigator.geolocation.getCurrentPosition(position=>{
-  if(request!==dayBathRequest)return;
-  finish();
-  const lat=position.coords.latitude,lng=position.coords.longitude;
-  openDayBathMap(query+' near '+lat+','+lng,'現在地周辺の施設');
- },error=>{
-  if(request!==dayBathRequest)return;
-  finish();
-  const messages={1:'位置情報が許可されていません。ブラウザのサイト設定で位置情報を許可するか、地域を指定してください。',2:'現在地を取得できませんでした。位置情報を有効にして再試行するか、地域を指定してください。',3:'現在地の取得が時間切れになりました。もう一度試すか、地域を指定してください。'};
-  box.innerHTML='<div class="notice" role="alert">'+esc(messages[error.code]||'現在地を取得できませんでした。地域を指定してください。')+'</div>';
- },{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+ dayBathTimer=setTimeout(()=>fallback('現在地の取得を待機しましたが応答がありませんでした。'),12000);
+ try{
+  navigator.geolocation.getCurrentPosition(position=>{
+   if(request!==dayBathRequest)return;
+   const lat=position.coords.latitude,lng=position.coords.longitude;
+   if(!Number.isFinite(lat)||!Number.isFinite(lng)){fallback('有効な位置情報を取得できませんでした。');return}
+   finish();
+   openDayBathMap(query+' near '+lat+','+lng,'現在地周辺の施設');
+   status('現在地を取得しました。下の「家族風呂で地図検索」などを押すと、周辺の候補が開きます。');
+  },error=>{
+   const messages={1:'位置情報の使用が許可されていません。',2:'端末の現在地を取得できませんでした。',3:'現在地の取得が時間切れになりました。'};
+   fallback(messages[error.code]||'現在地の取得に失敗しました。');
+  },{enableHighAccuracy:false,timeout:10000,maximumAge:300000});
+ }catch(error){fallback('このブラウザでは位置情報を利用できません。')}
 }
 function resetDayBath(){
  dPref.value='';dArea.value='';dBath.selectedIndex=0;dWord.value='';dLocationMode.value='nearby';changeDayBathLocationMode();
@@ -632,6 +650,6 @@ function importData(ev){
 
 changeSearchMode();renderFavorites();renderManage();
 </script>
-<script src="./pwa.js?v=1.9.0"></script>
+<script src="./pwa.js?v=1.10.0"></script>
 </body>
 </html>
