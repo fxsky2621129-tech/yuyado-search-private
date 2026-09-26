@@ -168,21 +168,18 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 
 <section id="daybath" class="panel">
   <div class="hero">
-    <h2>🛁 日帰りの貸切・家族風呂を探す</h2>
-    <p>現在地の近く、または指定した地域で、貸切・家族風呂のある日帰り施設を探します。</p>
+    <h2>🛁 ニフティ温泉で貸切・家族風呂を探す</h2>
+    <p>都道府県を選んで、ニフティ温泉の「貸切風呂・個室風呂」一覧を開きます。</p>
   </div>
   <div class="filters">
-    <div class="field" style="margin-bottom:12px"><label for="dLocationMode">探す範囲</label><select id="dLocationMode" onchange="changeDayBathLocationMode()"><option value="nearby">現在地の近く</option><option value="region">都道府県・地域を指定</option></select></div>
-    <div class="grid2">
-      <div class="field"><label for="dPref">都道府県（地域指定時）</label><select id="dPref"></select></div>
-      <div class="field"><label for="dArea">市区町村・地域</label><input id="dArea" placeholder="例：横浜、別府、札幌"></div>
-      <div class="field"><label for="dBath">お風呂の種類</label><select id="dBath"><option value="貸切風呂 家族風呂">貸切風呂・家族風呂</option><option value="家族風呂">家族風呂</option><option value="貸切風呂">貸切風呂</option><option value="貸切露天風呂">貸切露天風呂</option></select></div>
-      <div class="field"><label for="dWord">追加キーワード</label><input id="dWord" placeholder="例：予約可、個室、子連れ"></div>
+    <div class="field"><label for="dPref">都道府県</label><select id="dPref" onchange="updateNiftyBathSearch()"></select></div>
+    <div class="actions">
+      <a class="btn primary" style="text-decoration:none" id="niftyBathSearch" href="https://onsen.nifty.com/ft-kashikiri/" target="_blank" rel="noopener noreferrer">ニフティ温泉で検索 ↗</a>
+      <button class="btn secondary" type="button" onclick="resetDayBath()">条件をリセット</button>
     </div>
-    <div class="actions"><button class="btn primary" type="button" id="dSearchButton" onclick="searchDayBath()">現在地周辺を詳しく探す</button><button class="btn secondary" type="button" onclick="resetDayBath()">条件をリセット</button></div>
+    <p class="small" id="niftyBathSummary" role="status">全国の貸切風呂・個室風呂一覧を開きます。</p>
   </div>
-  <div class="notice">検索ボタンを押すと、表記違いの地図検索と詳しいウェブ検索の入口を表示します。各リンクは別画面で開きます。「現在地の近く」では位置情報の許可が必要です。取得した位置は端末に保存せず、検索時にGoogleマップに渡します。結果にはスーパー銭湯以外の入浴施設も含まれる場合があります。貸切の有無、日帰り利用、予約方法・料金・営業時間は各施設の公式情報で確認してください。</div>
-  <div id="dResults" class="cards" aria-live="polite"></div>
+  <div class="notice">ニフティ温泉のサイトを別画面で開きます。市区町村や日帰り利用などの絞り込みは、移動先で指定してください。家族風呂の利用条件・予約方法は各施設の案内で確認できます。</div>
 </section>
 
 <section id="food" class="panel">
@@ -280,7 +277,7 @@ footer{padding:22px 14px 36px;color:var(--muted);text-align:center;font-size:11p
 </section>
 </main>
 
-<footer>湯宿サーチ v1.10 — 登録データはこの端末に保存</footer>
+<footer>湯宿サーチ v1.11 — 登録データはこの端末に保存</footer>
 </div>
 
 <script>
@@ -470,83 +467,14 @@ function renderWebSearch(kind){
  const destinations=[['Googleで検索結果を開く',''],['じゃらん掲載の宿を探す','jalan.net'],['楽天トラベル掲載の宿を探す','travel.rakuten.co.jp']];
  document.getElementById(prefix+'Results').innerHTML=`<article class="card" style="grid-column:1/-1"><h4>実在する宿をネットで探す</h4><p style="font-size:13px;line-height:1.6">検索条件：${esc(webSearchQuery(kind))}</p><div class="actions">${destinations.map(([label,site])=>`<a class="linkbtn" href="${esc(webSearchUrl(kind,site))}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`).join('')}</div><p class="small" style="line-height:1.7">各リンクはGoogle検索を別画面で開きます。じゃらん・楽天トラベルは掲載サイトを絞って検索します。空室・料金・評価や、希望の条件を満たすかは宿・プランのページで確認してください。</p><p class="small">結果が少ないときは、チェックする条件を減らしてください。通信が必要です。</p></article>`;
 }
-let dayBathRequest=0;
-let dayBathTimer;
-function showDayBathResults(){document.getElementById('dResults').scrollIntoView({behavior:'smooth',block:'start'})}
-function changeDayBathLocationMode(){
- const nearby=val('dLocationMode')==='nearby';
- for(const id of ['dPref','dArea'])document.getElementById(id).disabled=nearby;
- document.getElementById('dSearchButton').textContent=nearby?'現在地周辺を詳しく探す':'指定地域を詳しく探す';
- clearTimeout(dayBathTimer);dayBathRequest++;document.getElementById('dSearchButton').disabled=false;document.getElementById('dResults').innerHTML='';
+const niftyPrefSlugs=['','hokkaido','aomori','iwate','miyagi','akita','yamagata','fukushima','ibaraki','tochigi','gunma','saitama','chiba','tokyo','kanagawa','niigata','toyama','ishikawa','fukui','yamanashi','nagano','gifu','shizuoka','aichi','mie','shiga','kyoto','osaka','hyogo','nara','wakayama','tottori','shimane','okayama','hiroshima','yamaguchi','tokushima','kagawa','ehime','kochi','fukuoka','saga','nagasaki','kumamoto','oita','miyazaki','kagoshima','okinawa'];
+function updateNiftyBathSearch(){
+ const pref=val('dPref'),slug=niftyPrefSlugs[prefs.indexOf(pref)]||'';
+ document.getElementById('niftyBathSearch').href='https://onsen.nifty.com/ft-kashikiri/'+(slug?slug+'/':'');
+ document.getElementById('niftyBathSummary').textContent=(pref||'全国')+'の貸切風呂・個室風呂一覧を開きます。';
 }
-function dayBathTerms(){
- const groups={
-  '貸切風呂 家族風呂':['家族風呂','貸切風呂','貸し切り風呂','家族湯','貸切温泉'],
-  '家族風呂':['家族風呂','家族湯','貸切家族風呂'],
-  '貸切風呂':['貸切風呂','貸し切り風呂','貸切温泉'],
-  '貸切露天風呂':['貸切露天風呂','貸し切り露天風呂','家族露天風呂']
- };
- return groups[val('dBath')]||groups['貸切風呂 家族風呂'];
-}
-function dayBathQuery(){return [dayBathTerms()[0],val('dWord').trim()].filter(Boolean).join(' ')}
-function openDayBathMap(query,label){
- // Keep each map search simple; multiple required synonyms exclude relevant facilities.
- const nearby=val('dLocationMode')==='nearby';
- const anchor=nearby?(query.includes(' near ')?query.slice(query.lastIndexOf(' near ')):' near me'):'';
- const region=nearby?'':[val('dPref'),val('dArea').trim()].filter(Boolean).join(' ');
- const terms=dayBathTerms(),extra=val('dWord').trim();
- const link=(url,title)=>'<a class="linkbtn" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+esc(title)+' ↗</a>';
- const maps=terms.map(term=>link('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([region,term,extra].filter(Boolean).join(' ')+anchor),term+'で地図検索')).join('');
- const synonyms='('+terms.map(term=>'"'+term+'"').join(' OR ')+')';
- const webQuery=[region,synonyms,'(日帰り OR 立ち寄り OR 立寄り OR 時間貸し)',extra].filter(Boolean).join(' ');
- const web=tail=>'https://www.google.com/search?hl=ja&q='+encodeURIComponent(webQuery+' '+tail);
- document.getElementById('dResults').innerHTML='<div id="dLocationStatus" class="notice" role="status" style="grid-column:1/-1"></div><article class="card" style="grid-column:1/-1"><h4>'+esc(label)+'：表記を変えて探す</h4><p class="small">スーパー銭湯に限定せず、日帰り温泉・家族湯専門店も対象にします。下のボタンはそれぞれ別の検索です。</p><div class="actions">'+maps+'</div></article>'
- +'<article class="card" style="grid-column:1/-1"><h4>貸切風呂の掲載ページを詳しく探す</h4><p class="small">'+(nearby?'このウェブ検索は全国が対象です。地域を絞る場合は「都道府県・地域を指定」に切り替えてください。':'検索地域：'+esc(region||'全国'))+'</p><div class="actions">'+link(web(''),'日帰りの貸切・家族風呂をまとめて検索')+link(web('(予約 OR 利用案内 OR 料金)'),'利用案内・予約情報を探す')+link(web('site:onsen.nifty.com'),'ニフティ温泉の掲載情報を探す')+link('https://onsen.nifty.com/ft-kashikiri/','貸切・個室風呂の全国一覧')+'</div><p class="small">検索候補は貸切風呂の存在や現在の営業を確認済みの一覧ではありません。公式ページで「日帰りで貸切利用できる浴室」があるか確認してください。</p></article>';
-}
-function searchDayBath(){
- clearTimeout(dayBathTimer);
- const request=++dayBathRequest,query=dayBathQuery(),button=document.getElementById('dSearchButton');
- const status=message=>{const el=document.getElementById('dLocationStatus');if(el)el.textContent=message};
- const finish=()=>{clearTimeout(dayBathTimer);button.disabled=false;button.textContent=val('dLocationMode')==='nearby'?'現在地周辺を詳しく探す':'指定地域を詳しく探す'};
- if(val('dLocationMode')==='region'){
-  openDayBathMap([val('dPref'),val('dArea').trim(),query].filter(Boolean).join(' '),'指定地域の施設');
-  status('下の「地図検索」ボタンを選ぶと検索結果が開きます。');showDayBathResults();return;
- }
- // Show usable map links immediately, even while location permission is pending.
- openDayBathMap(query+' near me','近くの施設を探す');
- status('検索リンクを表示しました。現在地を取得中です。位置情報の使用を許可してください。');
- showDayBathResults();
- const fallback=message=>{
-  if(request!==dayBathRequest)return;
-  dayBathRequest++;finish();
-  status(message+' 下の地図検索はそのまま使えます。Googleマップ側の位置情報に基づいて「近く」を検索します。位置が違う場合は地域を指定してください。');
- };
- if(!navigator.geolocation||!window.isSecureContext){
-  fallback('このブラウザでは現在地を取得できません。');return;
- }
- button.disabled=true;button.textContent='現在地を取得中…';
- dayBathTimer=setTimeout(()=>fallback('現在地の取得を待機しましたが応答がありませんでした。'),12000);
- try{
-  navigator.geolocation.getCurrentPosition(position=>{
-   if(request!==dayBathRequest)return;
-   const lat=position.coords.latitude,lng=position.coords.longitude;
-   if(!Number.isFinite(lat)||!Number.isFinite(lng)){fallback('有効な位置情報を取得できませんでした。');return}
-   finish();
-   openDayBathMap(query+' near '+lat+','+lng,'現在地周辺の施設');
-   status('現在地を取得しました。下の「家族風呂で地図検索」などを押すと、周辺の候補が開きます。');
-  },error=>{
-   const messages={1:'位置情報の使用が許可されていません。',2:'端末の現在地を取得できませんでした。',3:'現在地の取得が時間切れになりました。'};
-   fallback(messages[error.code]||'現在地の取得に失敗しました。');
-  },{enableHighAccuracy:false,timeout:10000,maximumAge:300000});
- }catch(error){fallback('このブラウザでは位置情報を利用できません。')}
-}
-function resetDayBath(){
- dPref.value='';dArea.value='';dBath.selectedIndex=0;dWord.value='';dLocationMode.value='nearby';changeDayBathLocationMode();
-}
-document.querySelectorAll('#daybath input').forEach(input=>input.addEventListener('keydown',event=>{
- if(event.key==='Enter'){event.preventDefault();searchDayBath()}
-}));
-changeDayBathLocationMode();
+function resetDayBath(){document.getElementById('dPref').value='';updateNiftyBathSearch()}
+updateNiftyBathSearch();
 function changeSearchMode(){
  const mode=document.getElementById('searchMode').value;const web=mode==='web',api=mode==='rakuten';
  document.getElementById('searchModeHelp').textContent=api?'地域や条件を選んで「楽天APIで検索」を押すと、楽天トラベル掲載施設をアプリ内に表示します。':'この端末に登録した宿だけを検索します。';
@@ -650,6 +578,6 @@ function importData(ev){
 
 changeSearchMode();renderFavorites();renderManage();
 </script>
-<script src="./pwa.js?v=1.10.0"></script>
+<script src="./pwa.js?v=1.11.0"></script>
 </body>
 </html>
